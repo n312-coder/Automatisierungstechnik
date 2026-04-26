@@ -58,3 +58,24 @@ LineIDs.dbg.bak
 
 # TwinCAT Measurement
 *.vsm
+
+
+
+
+
+# === TwinCAT Specific ===
+# Temporäre Backup- und User-Dateien
+*.~u
+.~
+*.bak
+*.tpy
+
+# Kompilier-Informationen (Diese ändern sich bei jedem Build!)
+_CompileInfo/
+_Boot/
+
+# TwinCAT System Manager & PLC generierte Dateien
+LineControlInfo.xml
+*.cll
+*.ocx
+*.tmp

@@ -1,0 +1,134 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="FB_Dispenser" Id="{45c5944d-3719-4462-a8a5-5f2b98f99738}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_Dispenser
+VAR_IN_OUT
+    ax : AXIS_REF; // Die Referenz zum echten Spindel-Motor!
+END_VAR
+VAR_INPUT
+    bEnable      : BOOL;
+    bExecute     : BOOL;
+    bSensFlasche : BOOL; 
+    iFuellstand  : UINT; 
+    iLimit       : UINT; 
+END_VAR
+VAR_OUTPUT
+    eState       : E_State;
+END_VAR
+VAR
+    nState    : INT;
+    mcPower   : MC_Power;          
+    mcMove    : MC_MoveRelative;
+	mcReset : MC_Reset;
+    bMoveExec : BOOL;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// =========================================================
+// 1. FEHLER ABFANGEN (Keine Guillotine mehr!)
+// =========================================================
+IF ax.Status.Error AND nState <> 100 THEN
+    nState := 99; 
+END_IF
+
+// =========================================================
+// 2. DIE SCHRITTKETTE (Das Gehirn)
+// =========================================================
+CASE nState OF
+    0: // OFF / Grundstellung
+        eState := E_State.Off;
+        bMoveExec := FALSE; 
+        mcPower.Enable := FALSE; // <-- Die Schrittkette schaltet den Strom aus!
+        
+        IF bEnable THEN nState := 1; END_IF
+
+    1: // READY / Warten auf Chef
+        eState := E_State.Ready;
+        mcPower.Enable := TRUE; // <-- Die Schrittkette schaltet den Strom an!
+        
+        IF NOT bEnable THEN nState := 0; END_IF // Hier ist Ausschalten sicher
+        IF bExecute THEN nState := 2; END_IF
+
+    2: // Warten auf Flasche (Sensor vor Ort)
+        IF NOT bEnable THEN nState := 0; END_IF // Hier ist Ausschalten sicher
+        
+        IF bSensFlasche THEN
+            nState := 3;
+        END_IF
+
+    3: // BEFÜLLEN (Aktion)
+        eState := E_State.Production;
+        bMoveExec := TRUE; 
+        
+        // WICHTIG: Kein "IF NOT bEnable" hier! Er macht den Schuss erst stur zu Ende.
+        
+        IF mcMove.Done THEN
+            bMoveExec := FALSE; 
+            nState := 4;
+        END_IF
+        
+        IF mcMove.Error OR ax.Status.Error THEN
+            bMoveExec := FALSE; 
+            nState := 99; // Ab in den Error-State!
+        END_IF
+
+    4: // DONE / Meldung an den Chef
+        eState := E_State.Done;
+        
+        IF NOT bEnable THEN nState := 0; END_IF // Flasche ist voll, Ausschalten wieder sicher!
+        IF NOT bExecute THEN nState := 1; END_IF
+        
+    99: // ERROR (Sicherheits-Halt)
+        eState := E_State.Error;
+        bMoveExec := FALSE;
+        mcPower.Enable := FALSE;
+        mcReset.Execute := FALSE; // Reset sicherheitshalber aus
+        
+        // Wenn der Bediener die Anlage wieder einschaltet, versuchen wir die Achse zu retten!
+        IF bEnable THEN 
+            nState := 100; 
+        END_IF
+        
+    100: // RESET DURCHFÜHREN (Virtuelles F8)
+        mcReset.Execute := TRUE; // Sende den Reset-Befehl an die Achse
+        
+        IF mcReset.Done THEN
+            // Erfolgreich repariert!
+            mcReset.Execute := FALSE;
+            nState := 1; // Zurück in die normale Bereitschaft
+            
+        ELSIF mcReset.Error THEN
+            // Reset fehlgeschlagen (Fehler liegt noch physisch an)
+            mcReset.Execute := FALSE;
+            nState := 99; // Zurück in den harten Fehler-State
+        END_IF
+        
+END_CASE
+
+// =========================================================
+// 3. BAUSTEINE AUFRUFEN (Die Muskeln - IMMER GANZ UNTEN!)
+// =========================================================
+
+mcPower(
+    Axis := ax, 
+    // Enable wurde in der Schrittkette gesetzt! Er behält den Wert automatisch.
+    Enable_Positive := TRUE, 
+    Enable_Negative := TRUE, 
+    Override := 100.0
+);
+
+mcMove(
+    Axis := ax, 
+    Execute := bMoveExec, // Hört auf die Schrittkette!
+    Distance := 50.0,      
+    Velocity := 30.0,      
+    Acceleration := 100.0, 
+    Deceleration := 100.0
+);
+
+mcReset(
+    Axis := ax, 
+    Execute := mcReset.Execute
+);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

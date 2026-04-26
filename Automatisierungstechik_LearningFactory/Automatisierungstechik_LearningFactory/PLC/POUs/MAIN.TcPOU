@@ -1,0 +1,124 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="MAIN" Id="{a083648c-e1b0-487c-87b8-a87728f45f05}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM MAIN
+VAR
+	// Die Logik-Bausteine (Module Level)
+    fbAmpel        : FB_StatusLight;
+    fbVereinzelung : FB_Vereinzelung;
+    fbTransport    : FB_Transport;
+    
+    // NEU: Die drei Abfüllstationen (Dispenser)
+    fbDisp1        : FB_Dispenser;
+    fbDisp2        : FB_Dispenser;
+    fbDisp3        : FB_Dispenser;
+
+    // NEU: Der Werksleiter / Master (Machine Level)
+    // Er steuert die oben genannten Module
+    fbModul        : FB_Abfuellmodul;
+
+    // Die Hardware-Übersetzer für die Relais (Process Level)
+    fbRelaisZyl1   : FB_RCrtl; // Schleuse oben
+    fbRelaisZyl2   : FB_RCrtl; // Schleuse unten
+    
+    // Der Antrieb
+    fbBand         : FB_CNV;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// --- 1. DER CHEF GIBT DIE BEFEHLE (Hierarchisches Modul) ---
+fbModul(
+    bEnable := IFC_HW.bEnable,
+    bExecute := IFC_HW.bExecute,
+    
+    // Status-Rückmeldungen der Arbeiter abfragen
+    bVereinzelungDone := (fbVereinzelung.eStateOut = E_State.Done),
+    bTransportDone    := (fbTransport.eState = E_State.Done),
+    bDisp1Done        := (fbDisp1.eState = E_State.Done),
+    bDisp2Done        := (fbDisp2.eState = E_State.Done),
+    bDisp3Done        := (fbDisp3.eState = E_State.Done)
+);
+
+// --- 2. DIE ARBEITER FÜHREN AUS ---
+
+// Vereinzelung
+fbVereinzelung(
+    bEnable  := IFC_HW.bEnable,
+    bExecute := fbModul.bStartVereinzelung,
+    bSens1   := IFC_HW.bEinzelSens1,
+    bSens2   := IFC_HW.bEinzelSens2,
+    bSens3   := IFC_HW.bEinzelSens3
+);
+
+// Ampel und Relais für Vereinzelung
+fbAmpel(eState := fbModul.eState);
+IFC_HW.bAmpelRot   := fbAmpel.bLightRed;
+IFC_HW.bAmpelGelb  := fbAmpel.bLightYellow;
+IFC_HW.bAmpelGrun  := fbAmpel.bLightGreen;
+
+fbRelaisZyl1(bIn := fbVereinzelung.bGate1);
+fbRelaisZyl2(bIn := fbVereinzelung.bGate2);
+IFC_HW.bR1AKT1 := fbRelaisZyl1.bQ1;
+IFC_HW.bR2AKT1 := fbRelaisZyl1.bQ2;
+IFC_HW.bR1AKT2 := fbRelaisZyl2.bQ1;
+IFC_HW.bR2AKT2 := fbRelaisZyl2.bQ2;
+
+// Transport-Management
+fbTransport(
+    bEnable  := IFC_HW.bEnable,
+    bExecute := fbModul.bStartTransport,    // <-- Befehl kommt vom Chef
+    nStation := fbModul.nZielStation,       // <-- Ziel (1, 2, 3, 4) kommt vom Chef
+    bSens1   := IFC_HW.bBandSens1,
+    bSens2   := IFC_HW.bBandSens2,
+    bSens3   := IFC_HW.bBandSens3,
+    bSens4   := IFC_HW.bBandSens4
+);
+
+// Die Band-Stopper
+IFC_HW.bBandHub1 := fbTransport.bHub1;
+IFC_HW.bBandHub2 := fbTransport.bHub2;
+IFC_HW.bBandHub3 := fbTransport.bHub3;
+
+
+// --- 3. DIE EXTRUDER ---
+
+fbDisp1(
+    ax := IFC_HW.ax_Extruder1,
+    bEnable := IFC_HW.bEnable,
+    bExecute := fbModul.bStartDisp1,        // <-- Befehl kommt vom Chef
+    bSensFlasche := IFC_HW.bBandSens1,
+    iFuellstand := IFC_HW.iFillSens1,
+    iLimit := 80                            // Hier könntest du später Variablen einsetzen
+);
+
+fbDisp2(
+    ax := IFC_HW.ax_Extruder2,
+    bEnable := IFC_HW.bEnable,
+    bExecute := fbModul.bStartDisp2,        // <-- Befehl kommt vom Chef
+    bSensFlasche := IFC_HW.bBandSens2,
+    iFuellstand := IFC_HW.iFillSens2,
+    iLimit := 80
+);
+
+fbDisp3(
+    ax := IFC_HW.ax_Extruder3,
+    bEnable := IFC_HW.bEnable,
+    bExecute := fbModul.bStartDisp3,        // <-- Befehl kommt vom Chef
+    bSensFlasche := IFC_HW.bBandSens3,
+    iFuellstand := IFC_HW.iFillSens3,
+    iLimit := 80
+);
+
+
+// --- 4. DER MUSKEL FÜRS BAND ---
+
+fbBand(
+    bEnable  := IFC_HW.bEnable,        
+    bExecute := fbTransport.bBandExecute, // Fahrbefehl vom Transport-Baustein
+    bHalt    := fbTransport.bBandHalt,    // Bremsbefehl vom Transport-Baustein
+    rVel     := 50.0,                 
+    ax       := IFC_HW.ax_BandMotor    
+);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

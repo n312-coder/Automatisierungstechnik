@@ -1,0 +1,146 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="FB_Abfuellmodul" Id="{c9826859-957f-4a6e-8c24-b0c6a8923961}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_Abfuellmodul
+VAR_INPUT
+    bEnable  : BOOL;
+    bExecute : BOOL;
+    
+    // Status-Rückmeldungen der Abteilungsleiter (Sind sie fertig?)
+    bVereinzelungDone : BOOL;
+    bTransportDone    : BOOL;
+    bDisp1Done        : BOOL;
+    bDisp2Done        : BOOL;
+    bDisp3Done        : BOOL;
+END_VAR
+VAR_OUTPUT
+    eState   : E_State;
+    
+    // Start-Befehle an die Abteilungsleiter
+    bStartVereinzelung : BOOL;
+    bStartTransport    : BOOL;
+    nZielStation       : INT;     // Welcher Extruder ist das Ziel?
+    bStartDisp1        : BOOL;
+    bStartDisp2        : BOOL;
+    bStartDisp3        : BOOL;
+END_VAR
+VAR
+    nState : INT;
+    i      : INT; // Unser Stations-Zähler (1, 2, 3)
+	bFlascheAktiv : BOOL;	// Flasche im System?
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF NOT bEnable THEN
+    nState := 0;
+	eState := E_State.Off;
+END_IF
+
+CASE nState OF
+    0: // Start / Bereit
+        IF bEnable THEN
+            eState := E_State.Ready;
+        END_IF
+		
+        bStartVereinzelung := FALSE;
+        bStartTransport    := FALSE;
+        bStartDisp1        := FALSE;
+        bStartDisp2        := FALSE;
+        bStartDisp3        := FALSE;
+
+        IF bExecute THEN
+            nState := 10;
+        END_IF
+
+    10: // "Vereinzeln der Flasche"
+        eState := E_State.Production;
+        // --- 1. INTELLIGENTE SUCHE: Steht die Flasche exakt am Sensor? ---
+        IF IFC_HW.bBandSens1 THEN
+            i := 1; nState := 30; 
+        ELSIF IFC_HW.bBandSens2 THEN
+            i := 2; nState := 30; 
+        ELSIF IFC_HW.bBandSens3 THEN
+            i := 3; nState := 30; 
+        ELSIF IFC_HW.bBandSens4 THEN
+            nState := 40; 
+
+        // --- 2. Suche im Gedächtnis (Der Blinde Fleck) ---
+        ELSIF bFlascheAktiv THEN
+            // Sensoren sehen nichts, aber da ist eine Flasche!
+            // WICHTIG: Wohin war sie gerade unterwegs?
+            IF i < 4 THEN
+                nState := 20; // Sie war auf dem Weg zu einem Extruder (1, 2 oder 3)
+            ELSE
+                nState := 40; // Sie war schon auf der Zielgeraden zum Roboter (Station 4)
+            END_IF
+			
+        // --- 3. NORMALBETRIEB: Keine alte Flasche im System ---
+        ELSE
+            bStartVereinzelung := TRUE;
+        END_IF
+
+        IF bVereinzelungDone THEN
+            bStartVereinzelung := FALSE; // Befehl wieder wegnehmen
+			bFlascheAktiv := TRUE;
+            i := 1;                      // Zähler auf ersten Extruder setzen!
+            nState := 20;
+        END_IF
+
+    20: // "Fördern zu Extruder i"
+        nZielStation := i; // Dem Transport das Ziel (1, 2 oder 3) mitteilen
+        bStartTransport := TRUE;
+
+        IF bTransportDone THEN
+            bStartTransport := FALSE;
+            nState := 30;
+        END_IF
+
+    30: // "Extruder i Start"
+        // Welcher Dispenser muss gestartet werden?
+        IF i = 1 THEN bStartDisp1 := TRUE; END_IF
+        IF i = 2 THEN bStartDisp2 := TRUE; END_IF
+        IF i = 3 THEN bStartDisp3 := TRUE; END_IF
+
+        // Warten, bis der jeweilige Extruder "fertig" meldet
+        IF (i = 1 AND bDisp1Done) OR
+           (i = 2 AND bDisp2Done) OR
+           (i = 3 AND bDisp3Done) THEN
+            
+            // Befehle wieder wegnehmen
+            bStartDisp1 := FALSE;
+            bStartDisp2 := FALSE;
+            bStartDisp3 := FALSE;
+
+            // Zähler erhöhen! (i = i + 1)
+            i := i + 1;
+
+            // Prüfen, ob wir alle 3 Extruder durch haben
+            IF i < 4 THEN
+                nState := 20; // Zurück zu Schritt 20: Fördern zum NÄCHSTEN Extruder!
+            ELSE
+                nState := 40; // Alle 3 Farben sind drin! Weiter zur Übergabe.
+            END_IF
+        END_IF
+
+    40: // "Übergabe zu Portalroboter" / Station 4 (PDF S.3)
+        nZielStation := 4;
+        bStartTransport := TRUE;
+
+        IF bTransportDone THEN
+            bStartTransport := FALSE;
+            nState := 50;
+        END_IF
+
+    50: // Ziel / Done
+        eState := E_State.Done;
+		
+		bFlascheAktiv := FALSE;
+
+        IF NOT bExecute THEN
+            nState := 0; // Warten auf die nächste Flasche!
+        END_IF
+        
+END_CASE]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

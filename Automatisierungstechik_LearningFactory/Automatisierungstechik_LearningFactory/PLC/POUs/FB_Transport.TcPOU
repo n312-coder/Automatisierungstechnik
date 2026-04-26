@@ -1,0 +1,96 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="FB_Transport" Id="{a9bde942-10d7-41ad-b8c0-0b93ed80bd6e}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_Transport
+VAR_INPUT
+    bEnable   : BOOL;
+    bExecute  : BOOL;
+    nStation  : INT; // Das Ziel: 1, 2, 3 oder 4 
+    
+    // Die Lichtschranken auf dem Band
+    bSens1    : BOOL;
+    bSens2    : BOOL;
+    bSens3    : BOOL;
+    bSens4    : BOOL;
+END_VAR
+VAR_OUTPUT
+    eState    : E_State;
+    
+    // Die Stopper (Hubmagnete), um die Flasche aufzuhalten
+    bHub1     : BOOL;
+    bHub2     : BOOL;
+    bHub3     : BOOL;
+    
+    // Befehle, die wir an unseren bestehenden FB_CNV weitergeben
+    bBandExecute : BOOL;
+    bBandHalt    : BOOL;
+END_VAR
+VAR
+    nState : INT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// Übergeordnete Sicherheit
+IF NOT bEnable THEN
+    nState := 0;
+END_IF
+
+CASE nState OF
+    0: // Start / Ready
+        eState := E_State.Ready;
+        bBandExecute := FALSE;
+        bBandHalt := FALSE;
+        
+        // TRICK: TRUE = Zylinder ausfahren (BLOCKIEREN / GRUNDSTELLUNG)
+        bHub1 := FALSE;
+        bHub2 := FALSE;
+        bHub3 := FALSE;
+
+        IF bExecute AND nStation > 0 THEN
+            nState := 1;
+        END_IF
+
+    1: // Öffnen Hubzylinder (nStation - 1) 
+        eState := E_State.Production;
+        // FALSE = Zylinder einfahren (Flasche durchlassen)
+        IF nStation = 2 THEN bHub1 := TRUE; END_IF
+        IF nStation = 3 THEN bHub2 := TRUE; END_IF
+        IF nStation = 4 THEN bHub3 := TRUE; END_IF
+        
+        nState := 2;
+        
+    2: // Start Conveyor 
+        bBandExecute := TRUE;
+        nState := 3;
+        
+    3: // Warten bis Ziel erreicht ist
+        IF (nStation = 1 AND bSens1) OR
+           (nStation = 2 AND bSens2) OR
+           (nStation = 3 AND bSens3) OR
+           (nStation = 4 AND bSens4) THEN
+            nState := 4;
+        END_IF
+
+    4: // Schließen Hubzylinder
+        // Wieder alle Zylinder AUSFAHREN (blockieren)
+        bHub1 := FALSE;
+        bHub2 := FALSE;
+        bHub3 := FALSE;
+        nState := 5;
+
+    5: // Stop Conveyor 
+        bBandExecute := FALSE;
+        bBandHalt := TRUE; // Bremsbefehl
+        nState := 6;
+        
+    6: // Done
+        eState := E_State.Done;
+        bBandHalt := FALSE;
+        
+        IF NOT bExecute THEN
+            nState := 0;
+        END_IF
+END_CASE]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

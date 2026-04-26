@@ -1,0 +1,134 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="FB_CNV" Id="{bede6ce1-2426-4b38-8842-9ecb657cee19}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_CNV
+VAR_INPUT
+	// Steuereingänge
+	bEnable : BOOL;
+	bExecute : BOOL;
+	bHalt : BOOL;
+	//Bewegungseigenschaften
+	rVel : REAL;
+END_VAR
+VAR_OUTPUT
+	eState : E_State;
+END_VAR
+VAR
+	nState : INT;
+	mcPower : MC_Power;
+	mcReset : MC_Reset;
+	mcVelocity : MC_MoveVelocity;
+	mcHalt : MC_Halt;
+END_VAR
+VAR_IN_OUT
+	ax : Axis_Ref;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// 1. Fehlerüberwachung: Nur noch Fehler abfangen, KEINE Guillotine mehr!
+IF ax.Status.Error AND nState <> 100 THEN
+    nState := 99;
+END_IF
+
+// 2. Die Schrittkette (Logik)
+CASE nState OF
+    0: // Off
+        eState := E_State.Off;
+        mcPower.Enable := FALSE;
+        mcPower.Enable_Positive := FALSE;
+        mcPower.Enable_Negative := FALSE;
+        mcVelocity.Execute := FALSE;
+        mcHalt.Execute := FALSE;
+        mcReset.Execute := FALSE;
+        
+        IF bEnable THEN
+            nState := 1;
+        END_IF
+        
+    1: // Init (Achse einschalten)
+        eState := E_State.Init;
+        mcPower.Enable := TRUE;
+        mcPower.Enable_Positive := TRUE;
+        mcPower.Enable_Negative := TRUE;
+        
+        IF mcPower.Status THEN // Achse ist hochgefahren und bereit
+            nState := 2;
+        END_IF
+        
+        // Strom weg? Hier ist es sicher, weil das Band eh steht!
+        IF NOT bEnable THEN nState := 0; END_IF 
+        
+    2: // Ready (Warten auf Freigabe)
+        eState := E_State.Ready;
+        mcVelocity.Execute := FALSE;
+        mcHalt.Execute := FALSE;
+        
+        IF bExecute THEN
+            nState := 3;
+        END_IF
+        
+        // Strom weg? Hier ist es sicher, weil das Band eh steht!
+        IF NOT bEnable THEN nState := 0; END_IF 
+        
+    3: // CNV an (Fahren)
+        eState := E_State.Production;
+        mcVelocity.Velocity := rVel;
+        mcVelocity.Direction := MC_Positive_Direction;
+        mcVelocity.Execute := TRUE;
+        
+        // WICHTIG: Wenn Enable wegfällt, NICHT auf 0 springen, sondern erst BREMSEN!
+        IF bHalt OR NOT bEnable THEN
+            nState := 4;
+        END_IF
+        
+    4: // CNV aus (Bremsen)
+        eState := E_State.Production;
+        mcVelocity.Execute := FALSE;
+        mcHalt.Execute := TRUE; // Bremsvorgang einleiten
+        
+        IF mcHalt.Done THEN // Achse steht sicher still
+            nState := 5;
+        END_IF
+        
+    5: // Done (Stillstand nach Bewegung)
+        eState := E_State.Done;
+        mcHalt.Execute := FALSE;
+        
+        IF NOT bEnable THEN
+            nState := 0; // JETZT steht das Band und wir dürfen gefahrlos den Strom kappen!
+        ELSIF NOT bExecute AND NOT bHalt THEN
+            nState := 2; // Wieder zurück auf Lauerstellung
+        END_IF
+        
+    99: // Error State
+        eState := E_State.Error;
+        mcPower.Enable := FALSE;
+        mcPower.Enable_Positive := FALSE;
+        mcPower.Enable_Negative := FALSE;
+        mcVelocity.Execute := FALSE;
+        mcHalt.Execute := FALSE;
+        
+        IF bEnable THEN 
+            nState := 100;
+        END_IF
+        
+    100: // Resolve (Fehler zurücksetzen)
+        mcReset.Execute := TRUE;
+        
+        IF mcReset.Done THEN
+            mcReset.Execute := FALSE;
+            nState := 1; // Neustart nach Reset
+        ELSIF mcReset.Error THEN
+            mcReset.Execute := FALSE;
+            nState := 99; // Reset fehlgeschlagen
+        END_IF
+        
+END_CASE
+
+// 3. Die Baustein-Aufrufe (Ausführung)
+mcPower(Axis := ax, Enable := mcPower.Enable, Enable_Positive := mcPower.Enable_Positive, Enable_Negative := mcPower.Enable_Negative, Override := 100.0);
+mcReset(Axis := ax, Execute := mcReset.Execute);
+mcVelocity(Axis := ax, Execute := mcVelocity.Execute, Velocity := mcVelocity.Velocity, Direction := mcVelocity.Direction);
+mcHalt(Axis := ax, Execute := mcHalt.Execute);]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

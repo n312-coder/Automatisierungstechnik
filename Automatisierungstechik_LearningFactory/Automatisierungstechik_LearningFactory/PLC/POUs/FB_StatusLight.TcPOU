@@ -1,0 +1,61 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="FB_StatusLight" Id="{bf6d7b92-eb61-4911-98db-3f541cad39e2}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_StatusLight
+VAR_INPUT
+    eState : E_State;
+END_VAR
+VAR_OUTPUT
+	bLightRed    : BOOL;
+    bLightYellow : BOOL;
+    bLightGreen  : BOOL;
+END_VAR
+VAR
+	fbTimer      : TON;   // Unser Timer
+    bBlinkSignal : BOOL;  // Wechselt jede halbe Sekunde
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// 1. Erstmal alle Lichter standardmäßig ausschalten
+bLightRed    := FALSE;
+bLightYellow := FALSE;
+bLightGreen  := FALSE;
+
+// Blinker-Signal erzeugen (Takt: 500ms)
+fbTimer(IN := NOT fbTimer.Q, PT := T#500MS);
+IF fbTimer.Q THEN
+    bBlinkSignal := NOT bBlinkSignal;
+END_IF
+
+// 2. Zustand auswerten
+CASE eState OF
+    E_State.Off:
+        bLightRed := TRUE;
+        
+    E_State.Production:
+        bLightGreen := TRUE;
+        
+    E_State.Done:
+        bLightYellow := TRUE;
+        bLightGreen  := TRUE;
+	
+	E_State.Error:
+        bLightRed := bBlinkSignal; // Rot blinken
+        
+    E_State.Stop:
+        bLightRed    := bBlinkSignal; // Rot und Gelb blinken
+        bLightYellow := bBlinkSignal;
+        
+    E_State.Init:
+        bLightGreen := bBlinkSignal; // Grün blinken
+        
+    E_State.Ready:
+        bLightYellow := bBlinkSignal; // Gelb und Grün blinken
+        bLightGreen  := bBlinkSignal;
+        
+    E_State.Setup:
+        bLightYellow := bBlinkSignal; // Gelb blinken
+END_CASE]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="FB_RCrtl" Id="{0140caae-2c13-4d90-a54a-78f3849c5cf9}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_RCrtl
+VAR_INPUT
+	bIn : BOOL; // TRUE = Öffnen, FALSE = Schließen
+END_VAR
+VAR_OUTPUT
+	bQ1 : BOOL; // Relais 1
+    bQ2 : BOOL; // Relais 2
+END_VAR
+VAR
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF bIn THEN
+    bQ1 := TRUE;
+    bQ2 := FALSE;
+ELSIF NOT bIn THEN
+    bQ1 := FALSE;
+    bQ2 := TRUE;
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

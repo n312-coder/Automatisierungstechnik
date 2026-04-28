@@ -80,8 +80,7 @@ CASE nState OF
         END_IF
 
         IF bVereinzelungDone THEN
-            bStartVereinzelung := FALSE; // Befehl wieder wegnehmen
-			bFlascheAktiv := TRUE;
+            bFlascheAktiv := TRUE;
             i := 1;                      // Zähler auf ersten Extruder setzen!
             nState := 20;
         END_IF
@@ -91,6 +90,11 @@ CASE nState OF
         bStartTransport := TRUE;
 
         IF bTransportDone THEN
+            
+           	IF i = 1 THEN
+                bStartVereinzelung := FALSE; // Vereinzelung darf nächste Flasche holen
+            END_IF
+            
             bStartTransport := FALSE;
             nState := 30;
         END_IF

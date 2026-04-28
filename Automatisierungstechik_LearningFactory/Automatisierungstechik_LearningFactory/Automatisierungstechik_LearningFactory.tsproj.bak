@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<TcSmProject xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.beckhoff.com/schemas/2012/07/TcSmProject" TcSmVersion="1.0" TcVersion="3.1.4026.20">
+<TcSmProject xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.beckhoff.com/schemas/2012/07/TcSmProject" TcSmVersion="1.0" TcVersion="3.1.4026.21">
 	<DataTypes>
 		<DataType>
 			<Name GUID="{18071995-0000-0000-0000-000000000035}" TcBaseType="true" HideType="true">UINTARR2</Name>
@@ -2081,7 +2081,7 @@ External Setpoint Generation:
 		</Motion>
 		<Plc>
 			<Project GUID="{6C983A02-C4C5-44F7-9EAE-873E1534CB04}" Name="TempModel" PrjFilePath="TempModel\TempModel.plcproj" TmcFilePath="TempModel\TempModel.tmc" ReloadTmc="true" AmsPort="853" FileArchiveSettings="#x000e" SymbolicMapping="true">
-				<Instance Id="#x08502080" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcHash="{16DC0742-8261-296A-E2B2-E4863A5B7544}" TmcPath="TempModel\TempModel.tmc">
+				<Instance Id="#x08502080" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcHash="{E162CCFA-E4FB-A2D5-CE42-040F13A30934}" TmcPath="TempModel\TempModel.tmc">
 					<Name>TempModel Instance</Name>
 					<CLSID ClassFactory="TcPlc30">{08500001-0000-0000-F000-000000000064}</CLSID>
 					<Vars VarGrpType="2" AreaNo="1">
@@ -2119,7 +2119,7 @@ External Setpoint Generation:
 				</Instance>
 			</Project>
 			<Project GUID="{4EFB2AFB-2EB8-4DAB-994F-E7682549AF3E}" Name="LF_System_PLC" PrjFilePath="LF_System_PLC\LF_System_PLC.plcproj" TmcFilePath="LF_System_PLC\LF_System_PLC.tmc" ReloadTmc="true" AmsPort="854" FileArchiveSettings="#x000e" SymbolicMapping="true">
-				<Instance Id="#x085020c0" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcHash="{FE911C90-A95A-D088-6110-2CC7A915EA65}" TmcPath="LF_System_PLC\LF_System_PLC.tmc">
+				<Instance Id="#x085020c0" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcHash="{491CCFF6-A223-D152-D54A-630F88B4414F}" TmcPath="LF_System_PLC\LF_System_PLC.tmc">
 					<Name>LF_System_PLC Instance</Name>
 					<CLSID ClassFactory="TcPlc30">{08500001-0000-0000-F000-000000000064}</CLSID>
 					<Vars VarGrpType="2" AreaNo="1">

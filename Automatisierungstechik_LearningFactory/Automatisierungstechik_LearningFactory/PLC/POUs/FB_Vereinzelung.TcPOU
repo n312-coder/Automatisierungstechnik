@@ -39,6 +39,17 @@ CASE nState OF
             nState := 10; // Gehe zu Init-Open
         END_IF
         
+     9: // Gates schließen
+        bGate1 := FALSE;
+        bGate2 := FALSE;
+        
+        fbTimer(IN := TRUE, PT := T#1S); 
+        
+        IF fbTimer.Q THEN
+            nState := 10;
+            fbTimer(IN := FALSE);
+        END_IF
+        
     10: // Init-Open (Obere Schleuse auf, warten bis Flasche in Kammer fällt)
         bGate1 := TRUE;
         bGate2 := FALSE;
@@ -85,11 +96,10 @@ CASE nState OF
         
     40: // Bottel separated (Schleuse wieder zu)
         bGate1 := FALSE;
-        bGate2 := FALSE; // Schleuse ZU
         eStateOut := E_State.Done; // JETZT ERST melden wir "Done" an den Chef!
         
         IF NOT bExecute THEN // Warten, bis der Chef den Befehl wegnimmt
-            nState := 10; 
+            nState := 9; 
         END_IF
         
 END_CASE]]></ST>

@@ -43,6 +43,8 @@ CASE nState OF
         IF bEnable THEN
             nState := 1;
         END_IF
+		
+		
         
     1: // Init (Achse einschalten)
         eState := E_State.Init;
@@ -128,7 +130,9 @@ END_CASE
 mcPower(Axis := ax, Enable := mcPower.Enable, Enable_Positive := mcPower.Enable_Positive, Enable_Negative := mcPower.Enable_Negative, Override := 100.0);
 mcReset(Axis := ax, Execute := mcReset.Execute);
 mcVelocity(Axis := ax, Execute := mcVelocity.Execute, Velocity := mcVelocity.Velocity, Direction := mcVelocity.Direction);
-mcHalt(Axis := ax, Execute := mcHalt.Execute);]]></ST>
+mcHalt(Axis := ax, Execute := mcHalt.Execute);
+
+//Test git]]></ST>
     </Implementation>
   </POU>
 </TcPlcObject>

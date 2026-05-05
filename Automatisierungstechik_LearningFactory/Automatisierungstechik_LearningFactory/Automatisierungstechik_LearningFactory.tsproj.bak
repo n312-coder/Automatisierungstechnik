@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<TcSmProject xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.beckhoff.com/schemas/2012/07/TcSmProject" TcSmVersion="1.0" TcVersion="3.1.4026.21">
+<TcSmProject xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.beckhoff.com/schemas/2012/07/TcSmProject" TcSmVersion="1.0" TcVersion="3.1.4026.20">
 	<DataTypes>
 		<DataType>
 			<Name GUID="{18071995-0000-0000-0000-000000000035}" TcBaseType="true" HideType="true">UINTARR2</Name>
@@ -2262,7 +2262,7 @@ External Setpoint Generation:
 				</Instance>
 			</Project>
 			<Project GUID="{8CBAC867-9161-4211-8B4B-9BF7FC9D4B00}" Name="PLC" PrjFilePath="PLC\PLC.plcproj" TmcFilePath="PLC\PLC.tmc" ReloadTmc="true" AmsPort="851" FileArchiveSettings="#x000e" SymbolicMapping="true">
-				<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcHash="{EA476A27-FC0D-965B-ED62-E7E2CC88F64F}" TmcPath="PLC\PLC.tmc">
+				<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcHash="{7E813A40-3385-6306-C2A5-F33E114251F2}" TmcPath="PLC\PLC.tmc">
 					<Name>PLC Instance</Name>
 					<CLSID ClassFactory="TcPlc30">{08500001-0000-0000-F000-000000000064}</CLSID>
 					<Vars VarGrpType="2" AreaNo="1">
@@ -2432,11 +2432,11 @@ External Setpoint Generation:
 							<Type GUID="{25521FAA-EA5F-4C7F-8864-BBCCDACD2E98}" Namespace="MC">NCTOPLC_AXIS_REF</Type>
 						</Var>
 						<Var>
-							<Name>IFC_HW.ax_Extruder3.NcToPlc</Name>
+							<Name>IFC_HW.ax_Extruder2.NcToPlc</Name>
 							<Type GUID="{25521FAA-EA5F-4C7F-8864-BBCCDACD2E98}" Namespace="MC">NCTOPLC_AXIS_REF</Type>
 						</Var>
 						<Var>
-							<Name>IFC_HW.ax_Extruder2.NcToPlc</Name>
+							<Name>IFC_HW.ax_Extruder3.NcToPlc</Name>
 							<Type GUID="{25521FAA-EA5F-4C7F-8864-BBCCDACD2E98}" Namespace="MC">NCTOPLC_AXIS_REF</Type>
 						</Var>
 						<Var>
@@ -2479,11 +2479,6 @@ External Setpoint Generation:
 							<Type>BOOL</Type>
 						</Var>
 						<Var>
-							<Name>IFC_HW.bManEndZmin</Name>
-							<Comment><![CDATA[ Manipulator min Endschalter Achse z]]></Comment>
-							<Type>BOOL</Type>
-						</Var>
-						<Var>
 							<Name>IFC_HW.bManEndGmin</Name>
 							<Comment><![CDATA[ Manipulator min Endschalter Achse Gripper]]></Comment>
 							<Type>BOOL</Type>
@@ -2499,13 +2494,18 @@ External Setpoint Generation:
 							<Type>BOOL</Type>
 						</Var>
 						<Var>
-							<Name>IFC_HW.bManEndZmax</Name>
-							<Comment><![CDATA[ Manipulator max Endschalter Achse z]]></Comment>
+							<Name>IFC_HW.bManEndGmax</Name>
+							<Comment><![CDATA[ Manipulator max Endschalter Achse Gripper]]></Comment>
 							<Type>BOOL</Type>
 						</Var>
 						<Var>
-							<Name>IFC_HW.bManEndGmax</Name>
-							<Comment><![CDATA[ Manipulator max Endschalter Achse Gripper]]></Comment>
+							<Name>IFC_HW.bManEndZmin</Name>
+							<Comment><![CDATA[ Manipulator min Endschalter Achse z]]></Comment>
+							<Type>BOOL</Type>
+						</Var>
+						<Var>
+							<Name>IFC_HW.bManEndZmax</Name>
+							<Comment><![CDATA[ Manipulator max Endschalter Achse z]]></Comment>
 							<Type>BOOL</Type>
 						</Var>
 						<Var>

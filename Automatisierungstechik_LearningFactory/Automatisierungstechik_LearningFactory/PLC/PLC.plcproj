@@ -42,6 +42,9 @@
     <Compile Include="POUs\FB_StatusLight.TcPOU">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="POUs\FB_TimeOutError.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="POUs\FB_Transport.TcPOU">
       <SubType>Code</SubType>
     </Compile>

@@ -19,6 +19,8 @@ VAR
 	mcReset : MC_Reset;
 	mcVelocity : MC_MoveVelocity;
 	mcHalt : MC_Halt;
+	mcStop : MC_Stop;
+	bStop : BOOL;
 END_VAR
 VAR_IN_OUT
 	ax : Axis_Ref;
@@ -28,6 +30,8 @@ END_VAR]]></Declaration>
 IF ax.Status.Error AND nState <> 100 THEN
     nState := 99;
 END_IF
+
+bStop := ifc_Hw.bStop;
 
 // 2. Die Schrittkette (Logik)
 CASE nState OF
@@ -100,7 +104,26 @@ CASE nState OF
         ELSIF NOT bExecute AND NOT bHalt THEN
             nState := 2; // Wieder zurück auf Lauerstellung
         END_IF
+		
+	80: // Stop CNV
+		mcVelocity.Execute := FALSE;
+		mcHalt.Execute := FALSE;
+		mcStop.Execute := TRUE;
+		
+		IF mcStop.Done AND NOT bStop THEN
+			nState := 81;
+		END_IF
         
+	81:
+		mcVelocity.Execute := FALSE;
+		mcHalt.Execute := FALSE;
+		mcStop.Execute := TRUE;
+		mcReset.Execute := TRUE;
+		
+		IF mcReset.Done THEN
+			nState := 3;
+		END_IF
+	
     99: // Error State
         eState := E_State.Error;
         mcPower.Enable := FALSE;

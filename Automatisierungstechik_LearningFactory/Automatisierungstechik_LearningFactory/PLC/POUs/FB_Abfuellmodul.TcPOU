@@ -28,12 +28,20 @@ VAR
     nState : INT;
     i      : INT; // Unser Stations-Zähler (1, 2, 3)
 	bFlascheAktiv : BOOL;	// Flasche im System?
+	
+	bStop : Bool;
+	nMemState: INT;
 END_VAR
 ]]></Declaration>
     <Implementation>
       <ST><![CDATA[IF NOT bEnable THEN
     nState := 0;
 	eState := E_State.Off;
+END_IF
+
+// neu 
+IF bStop THEN
+	nMemState := nState;
 END_IF
 
 CASE nState OF

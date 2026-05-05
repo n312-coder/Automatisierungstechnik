@@ -24,16 +24,32 @@ VAR_OUTPUT
     // Befehle, die wir an unseren bestehenden FB_CNV weitergeben
     bBandExecute : BOOL;
     bBandHalt    : BOOL;
+	bError: BOOL;
+	ErrorID: DWORD;
 END_VAR
 VAR
     nState : INT;
+	
+	fbTO_Transport : FB_TimeOutError(9001,T#1S);
+	
+	bStop : BOOL;
 END_VAR
 ]]></Declaration>
     <Implementation>
-      <ST><![CDATA[// Übergeordnete Sicherheit
+      <ST><![CDATA[fbTO_Transport(
+	bIN:= eState = E_State.Production, 
+	bZiel:= eState := E_State.Done, 
+	bReset:= , 
+	bError=> bError, 
+	ErrorID=> ErrorID);
+
+
+// Übergeordnete Sicherheit
 IF NOT bEnable THEN
     nState := 0;
 END_IF
+
+bStop := ifc_Hw.bStop;
 
 CASE nState OF
     0: // Start / Ready

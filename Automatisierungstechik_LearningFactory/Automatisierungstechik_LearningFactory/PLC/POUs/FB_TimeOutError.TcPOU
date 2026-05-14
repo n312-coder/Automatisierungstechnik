@@ -14,10 +14,11 @@ END_VAR
 VAR
 	timer : TON;
 	_ErrorID : DWORD;
+	_PT : TIME;
 END_VAR
 ]]></Declaration>
     <Implementation>
-      <ST><![CDATA[timer(IN:= , PT:= , Q=> , ET=> );
+      <ST><![CDATA[timer(IN:= , PT:=_PT , Q=> , ET=> );
 
 IF bIN THEN
 	timer.IN := TRUE;
@@ -30,7 +31,9 @@ END_IF
 IF timer.Q THEN
 	bError := TRUE;
 	ErrorID := _ErrorID;
-ELSIF NOT timer.Q OR bReset THEN
+	//timer reset
+	timer.IN := FALSE;
+ELSIF bReset THEN  //Änderung
 	bError := FALSE;
 	ErrorID := 0;
 END_IF]]></ST>

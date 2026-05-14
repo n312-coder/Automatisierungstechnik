@@ -12,6 +12,10 @@ VAR_INPUT
     bDisp1Done        : BOOL;
     bDisp2Done        : BOOL;
     bDisp3Done        : BOOL;
+	
+	// Error handling
+	bTransportError : BOOL; 
+    bReset          : BOOL;
 END_VAR
 VAR_OUTPUT
     eState   : E_State;
@@ -37,6 +41,9 @@ END_VAR
       <ST><![CDATA[IF NOT bEnable THEN
     nState := 0;
 	eState := E_State.Off;
+ELSIF bTransportError AND nState <> 99 THEN
+	nMemState := nState;
+    nState := 99;
 END_IF
 
 // neu 
@@ -94,6 +101,7 @@ CASE nState OF
         END_IF
 
     20: // "Fördern zu Extruder i"
+		eState := E_State.Production;
         nZielStation := i; // Dem Transport das Ziel (1, 2 oder 3) mitteilen
         bStartTransport := TRUE;
 
@@ -108,6 +116,7 @@ CASE nState OF
         END_IF
 
     30: // "Extruder i Start"
+		eState := E_State.Production;
         // Welcher Dispenser muss gestartet werden?
         IF i = 1 THEN bStartDisp1 := TRUE; END_IF
         IF i = 2 THEN bStartDisp2 := TRUE; END_IF
@@ -135,6 +144,7 @@ CASE nState OF
         END_IF
 
     40: // "Übergabe zu Portalroboter" / Station 4 (PDF S.3)
+		eState := E_State.Production;
         nZielStation := 4;
         bStartTransport := TRUE;
 
@@ -143,13 +153,19 @@ CASE nState OF
             nState := 50;
         END_IF
 
-    50: // Ziel / Done
+    50: // Done
         eState := E_State.Done;
 		
 		bFlascheAktiv := FALSE;
 
         IF NOT bExecute THEN
-            nState := 0; // Warten auf die nächste Flasche!
+            nState := 0; // Warten auf die nächste Flasche
+        END_IF
+	
+	99: // Error
+        eState := E_State.Error; 
+        IF NOT bTransportError THEN
+            nState := nMemState; // Nach Reset zurück zum alten zustand
         END_IF
         
 END_CASE]]></ST>

@@ -34,6 +34,8 @@ END_VAR
 fbModul(
     bEnable := IFC_HW.bEnable,
     bExecute := IFC_HW.bExecute,
+	bTransportError := fbTransport.bError, 
+    bReset := reset,
     
     // Status-Rückmeldungen der Arbeiter abfragen
     bVereinzelungDone := (fbVereinzelung.eStateOut = E_State.Done),
@@ -71,6 +73,7 @@ IFC_HW.bR2AKT2 := fbRelaisZyl2.bQ2;
 fbTransport(
     bEnable  := IFC_HW.bEnable,
     bExecute := fbModul.bStartTransport,    // <-- Befehl kommt vom Chef
+	bReset   := reset,
     nStation := fbModul.nZielStation,       // <-- Ziel (1, 2, 3, 4) kommt vom Chef
     bSens1   := IFC_HW.bBandSens1,
     bSens2   := IFC_HW.bBandSens2,

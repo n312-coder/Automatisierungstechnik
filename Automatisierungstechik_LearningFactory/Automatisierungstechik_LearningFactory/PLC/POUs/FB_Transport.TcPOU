@@ -5,6 +5,7 @@
 VAR_INPUT
     bEnable   : BOOL;
     bExecute  : BOOL;
+	bReset : BOOL; // um Fehler zurück zusetzen
     nStation  : INT; // Das Ziel: 1, 2, 3 oder 4 
     
     // Die Lichtschranken auf dem Band
@@ -29,7 +30,7 @@ VAR_OUTPUT
 END_VAR
 VAR
     nState : INT;
-	
+	nMemState: INT;
 	fbTO_Transport : FB_TimeOutError(9001,T#1S);
 	
 	bStop : BOOL;
@@ -38,8 +39,8 @@ END_VAR
     <Implementation>
       <ST><![CDATA[fbTO_Transport(
 	bIN:= eState = E_State.Production, 
-	bZiel:= eState := E_State.Done, 
-	bReset:= , 
+	bZiel:= eState = E_State.Done, 
+	bReset:= bReset , 
 	bError=> bError, 
 	ErrorID=> ErrorID);
 
@@ -47,6 +48,9 @@ END_VAR
 // Übergeordnete Sicherheit
 IF NOT bEnable THEN
     nState := 0;
+ELSIF bError AND nState <> 99 AND nState <> 100 THEN
+	nMemState := nState;
+    nState := 99; //Timeout -> state 99 
 END_IF
 
 bStop := ifc_Hw.bStop;
@@ -76,10 +80,12 @@ CASE nState OF
         nState := 2;
         
     2: // Start Conveyor 
+		eState := E_State.Production;
         bBandExecute := TRUE;
         nState := 3;
         
     3: // Warten bis Ziel erreicht ist
+		eState := E_State.Production;
         IF (nStation = 1 AND bSens1) OR
            (nStation = 2 AND bSens2) OR
            (nStation = 3 AND bSens3) OR
@@ -105,6 +111,29 @@ CASE nState OF
         
         IF NOT bExecute THEN
             nState := 0;
+        END_IF
+	99: // Error State 
+        eState := E_State.Error;
+        bBandExecute := FALSE; 
+        bBandHalt    := TRUE; 
+        
+        // Schleusen schließen
+        bHub1 := FALSE;
+        bHub2 := FALSE;
+        bHub3 := FALSE;
+
+        IF bReset THEN 
+            nState := 100;
+        END_IF
+
+    100: // Reset
+        bBandHalt := FALSE;
+        IF NOT bError THEN 
+            IF nMemState = 3 THEN
+                nState := 2;
+            ELSE
+                nState := nMemState;   
+            END_IF 
         END_IF
 END_CASE]]></ST>
     </Implementation>

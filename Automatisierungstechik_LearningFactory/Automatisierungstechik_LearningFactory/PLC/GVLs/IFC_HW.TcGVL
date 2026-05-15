@@ -8,6 +8,7 @@ VAR_GLOBAL
 		bEnable		AT%I*	: BOOL;			// Enable Factory (HMI Production Umgebung)
 		bExecute	AT%I*	: BOOL;			// Startsignal	(Start Knopf Konsole)
 		bStop				: BOOL;			// Stop Variable (interne Variable um FB's zu stoppen)
+		bReset 				: bool; 		// Reset neu hinzugefgt
 		
 	// Station Statusampel	
 		bAmpelRot 	AT%Q* 	: BOOL;			// Signal-LED Rot

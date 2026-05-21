@@ -31,7 +31,7 @@ END_VAR
 VAR
     nState : INT;
 	nMemState: INT;
-	fbTO_Transport : FB_TimeOutError(9001,T#1S);
+	fbTO_Transport : FB_TimeOutError(9001,T#10S);
 	
 	bStop : BOOL;
 END_VAR

@@ -55,7 +55,7 @@ CASE nState OF
         bGate2 := FALSE;
         eStateOut := E_State.Init;
         
-        IF bSens1 THEN
+        IF bSens3 THEN
             nState := 11; // Gehe zu Init-Close
             fbTimer(IN := FALSE); // Timer resetten für den nächsten Schritt
         END_IF

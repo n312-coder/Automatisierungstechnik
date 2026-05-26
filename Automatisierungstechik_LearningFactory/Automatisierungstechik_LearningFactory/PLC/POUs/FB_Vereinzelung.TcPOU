@@ -7,11 +7,11 @@ VAR_INPUT
     bExecute : BOOL; // Startschalter
     bSens1   : BOOL; // Flasche in Kammer
     bSens2   : BOOL; // Flasche im Speicher
-    bSens3   : BOOL; // Flasche am Kopf (Band)
+    bSens3   : BOOL; // Flasche am Band
 END_VAR
 VAR_OUTPUT
-	bGate1    : BOOL;    // Befehl: Schleuse 1 (oben) öffnen
-    bGate2    : BOOL;    // Befehl: Schleuse 2 (unten) öffnen
+	bGate1    : BOOL;    // Befehl: Schleuse 1 öffnen
+    bGate2    : BOOL;    // Befehl: Schleuse 2 öffnen
     eStateOut : E_State; // Aktueller Betriebszustand
 END_VAR
 VAR
@@ -20,15 +20,15 @@ VAR
 END_VAR
 ]]></Declaration>
     <Implementation>
-      <ST><![CDATA[// 1. Timer immer aufrufen (braucht man für die internen Verzögerungen)
+      <ST><![CDATA[// Timer Starten
 fbTimer();
 
-// 2. Not-Aus / Stop Bedingung (Übersteuert alles)
+// Not-Aus
 IF NOT bEnable THEN
     nState := 0;
 END_IF
 
-// 3. Die eigentliche Schrittkette
+// State Machine
 CASE nState OF
     0: // Off
         bGate1 := FALSE;
@@ -36,7 +36,7 @@ CASE nState OF
         eStateOut := E_State.Off;
         
         IF bEnable AND bSens2 THEN
-            nState := 10; // Gehe zu Init-Open
+            nState := 10;
         END_IF
         
      9: // Gates schließen
@@ -50,55 +50,54 @@ CASE nState OF
             fbTimer(IN := FALSE);
         END_IF
         
-    10: // Init-Open (Obere Schleuse auf, warten bis Flasche in Kammer fällt)
+    10: // Schleuse 1 auf, warten auf Flasche
         bGate1 := TRUE;
         bGate2 := FALSE;
         eStateOut := E_State.Init;
         
         IF bSens3 THEN
-            nState := 11; // Gehe zu Init-Close
-            fbTimer(IN := FALSE); // Timer resetten für den nächsten Schritt
+            nState := 11;
+            fbTimer(IN := FALSE);
         END_IF
         
-    11: // Init-Close (Obere Schleuse zu, kurz warten)
+    11: // Schleuse 1 schließen
         bGate1 := FALSE;
         bGate2 := FALSE;
         eStateOut := E_State.Init;
         fbTimer(IN := TRUE, PT := T#1S); // 1 Sekunde warten, bis Zylinder mechanisch zu ist
         
         IF fbTimer.Q THEN
-            nState := 20; // Gehe zu Bottel in Chamber
+            nState := 20;
             fbTimer(IN := FALSE);
         END_IF
         
-    20: // Bottel in Chamber (Warten auf Startsignal vom Chef/Bediener)
+    20: // Warten auf bExecute
         bGate1 := FALSE;
         bGate2 := FALSE;
-        eStateOut := E_State.Ready; // Ab hier leuchtet die Ampel Gelb/Grün!
+        eStateOut := E_State.Ready; // Ampel Gelb/Grün
         
         IF bExecute THEN
-            nState := 30; // Gehe zu Prod.-Open
+            nState := 30;
             fbTimer(IN := FALSE);
         END_IF
         
-    30: // Prod.-Open (Untere Schleuse auf, Flasche fällt)
+    30: // Schleuse 2 öffnen
         bGate1 := FALSE;
-        bGate2 := TRUE; // Schleuse AUF
+        bGate2 := TRUE;
         eStateOut := E_State.Production; 
-        
-        // Wir ignorieren den Sensor komplett und nutzen NUR den Timer!
-        fbTimer(IN := TRUE, PT := T#1S); 
+       	
+        fbTimer(IN := TRUE, PT := T#0.5S);	//Timer für Fallzeit
         
         IF fbTimer.Q THEN
             nState := 40;
             fbTimer(IN := FALSE);
         END_IF
         
-    40: // Bottel separated (Schleuse wieder zu)
+    40: // Done zurückgeben.
         bGate1 := FALSE;
-        eStateOut := E_State.Done; // JETZT ERST melden wir "Done" an den Chef!
+        eStateOut := E_State.Done;
         
-        IF NOT bExecute THEN // Warten, bis der Chef den Befehl wegnimmt
+        IF NOT bExecute THEN
             nState := 9; 
         END_IF
         

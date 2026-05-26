@@ -31,9 +31,8 @@ END_IF
 IF timer.Q THEN
 	bError := TRUE;
 	ErrorID := _ErrorID;
-	//timer reset
 	timer.IN := FALSE;
-ELSIF bReset THEN  //Änderung
+ELSIF bReset THEN
 	bError := FALSE;
 	ErrorID := 0;
 END_IF]]></ST>

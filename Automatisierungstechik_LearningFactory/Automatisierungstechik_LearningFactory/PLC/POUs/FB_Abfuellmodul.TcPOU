@@ -5,43 +5,53 @@
 VAR_INPUT
     bEnable  : BOOL;
     bExecute : BOOL;
-    
-    // Status-Rückmeldungen der Abteilungsleiter (Sind sie fertig?)
-    bVereinzelungDone : BOOL;
-    bTransportDone    : BOOL;
-    bDisp1Done        : BOOL;
-    bDisp2Done        : BOOL;
-    bDisp3Done        : BOOL;
+    bReset   : BOOL;
+    // Status-Rückmeldungen der Abteilungsleiter
+	
+    // bVereinzelungDone : BOOL;
+    // bTransportDone    : BOOL;
+    // bDisp1Done        : BOOL;
+    // bDisp2Done        : BOOL;
+    // bDisp3Done        : BOOL;
 	
 	// Error handling
-	bTransportError : BOOL; 
-    bReset          : BOOL;
+	//bTransportError : BOOL; 
+    
 END_VAR
 VAR_OUTPUT
     eState   : E_State;
     
-    // Start-Befehle an die Abteilungsleiter
-    bStartVereinzelung : BOOL;
-    bStartTransport    : BOOL;
-    nZielStation       : INT;     // Welcher Extruder ist das Ziel?
-    bStartDisp1        : BOOL;
-    bStartDisp2        : BOOL;
-    bStartDisp3        : BOOL;
+    
 END_VAR
 VAR
     nState : INT;
     i      : INT; // Unser Stations-Zähler (1, 2, 3)
 	bFlascheAktiv : BOOL;	// Flasche im System?
 	
+	fbVereinzelung : FB_Vereinzelung; 
+    fbTransport    : FB_Transport;
+    fbDisp1        : FB_Dispenser;
+    fbDisp2        : FB_Dispenser;
+    fbDisp3        : FB_Dispenser;
+	
+	// Start-Befehle
+    bStartVereinzelung : BOOL;
+    bStartTransport    : BOOL;
+    nZielStation       : INT;     // Welcher Extruder ist das Ziel?
+    bStartDisp1        : BOOL;
+    bStartDisp2        : BOOL;
+    bStartDisp3        : BOOL;
+	
 	bStop : Bool;
 	nMemState: INT;
 END_VAR
+
 ]]></Declaration>
     <Implementation>
       <ST><![CDATA[IF NOT bEnable THEN
     nState := 0;
 	eState := E_State.Off;
-ELSIF bTransportError AND nState <> 99 THEN
+ELSIF fbTransport.bError AND nState <> 99 THEN
 	nMemState := nState;
     nState := 99;
 END_IF
@@ -94,7 +104,7 @@ CASE nState OF
             bStartVereinzelung := TRUE;
         END_IF
 
-        IF bVereinzelungDone THEN
+        IF fbVereinzelung.eStateOut = E_State.Done THEN
             bFlascheAktiv := TRUE;
             i := 1;                      // Zähler auf ersten Extruder setzen!
             nState := 20;
@@ -105,7 +115,7 @@ CASE nState OF
         nZielStation := i; // Dem Transport das Ziel (1, 2 oder 3) mitteilen
         bStartTransport := TRUE;
 
-        IF bTransportDone THEN
+        IF fbTransport.eState = E_State.Done THEN
             
            	IF i = 1 THEN
                 bStartVereinzelung := FALSE; // Vereinzelung darf nächste Flasche holen
@@ -123,9 +133,9 @@ CASE nState OF
         IF i = 3 THEN bStartDisp3 := TRUE; END_IF
 
         // Warten, bis der jeweilige Extruder "fertig" meldet
-        IF (i = 1 AND bDisp1Done) OR
-           (i = 2 AND bDisp2Done) OR
-           (i = 3 AND bDisp3Done) THEN
+        IF (i = 1 AND fbDisp1.eState = E_State.Done) OR
+           (i = 2 AND fbDisp2.eState = E_State.Done) OR
+           (i = 3 AND fbDisp3.eState = E_State.Done) THEN
             
             // Befehle wieder wegnehmen
             bStartDisp1 := FALSE;
@@ -148,7 +158,7 @@ CASE nState OF
         nZielStation := 4;
         bStartTransport := TRUE;
 
-        IF bTransportDone THEN
+        IF fbTransport.eState = E_State.Done THEN
             bStartTransport := FALSE;
             nState := 50;
         END_IF
@@ -164,11 +174,66 @@ CASE nState OF
 	
 	99: // Error
         eState := E_State.Error; 
-        IF NOT bTransportError THEN
+        IF NOT fbTransport.bError THEN
             nState := nMemState; // Nach Reset zurück zum alten zustand
         END_IF
         
-END_CASE]]></ST>
+END_CASE
+
+
+
+// FBs
+
+fbVereinzelung(
+    bEnable  := bEnable,
+    bExecute := bStartVereinzelung, // Interne Variable
+    bSens1   := IFC_HW.bEinzelSens1,
+    bSens2   := IFC_HW.bEinzelSens2,
+    bSens3   := IFC_HW.bEinzelSens3
+);
+
+fbTransport(
+    bEnable  := bEnable,
+    bExecute := bStartTransport,    // Interne Variable
+    bReset   := bReset,
+    nStation := nZielStation,       // Interne Variable
+    bSens1   := IFC_HW.bBandSens1,
+    bSens2   := IFC_HW.bBandSens2,
+    bSens3   := IFC_HW.bBandSens3,
+    bSens4   := IFC_HW.bBandSens4
+);
+
+// Direktes Beschreiben der Hardware-Ausgänge für den Transport
+IFC_HW.bBandHub1 := fbTransport.bHub1;
+IFC_HW.bBandHub2 := fbTransport.bHub2;
+IFC_HW.bBandHub3 := fbTransport.bHub3;
+
+fbDisp1(
+    ax := IFC_HW.ax_Extruder1,
+    bEnable := bEnable,
+    bExecute := bStartDisp1,        // Interne Variable
+    bSensFlasche := IFC_HW.bBandSens1,
+    iFuellstand := IFC_HW.iFillSens1,
+    iLimit := 80
+);
+
+fbDisp2(
+    ax := IFC_HW.ax_Extruder2,
+    bEnable := bEnable,
+    bExecute := bStartDisp2,        // Interne Variable
+    bSensFlasche := IFC_HW.bBandSens2,
+    iFuellstand := IFC_HW.iFillSens2,
+    iLimit := 80
+);
+
+fbDisp3(
+    ax := IFC_HW.ax_Extruder3,
+    bEnable := bEnable,
+    bExecute := bStartDisp3,        // Interne Variable
+    bSensFlasche := IFC_HW.bBandSens3,
+    iFuellstand := IFC_HW.iFillSens3,
+    iLimit := 80
+);]]></ST>
     </Implementation>
   </POU>
 </TcPlcObject>

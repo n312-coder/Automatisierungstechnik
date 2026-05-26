@@ -21,15 +21,19 @@ VAR_OUTPUT
     bHub1     : BOOL;
     bHub2     : BOOL;
     bHub3     : BOOL;
-    
+	
+	
 	bError: BOOL;
 	ErrorID: DWORD;
 END_VAR
 VAR
     nState : INT;
 	nMemState: INT;
-	fbTO_Transport : FB_TimeOutError(9001,T#10S); // Error wenn zu Flasche zulange braucht
+	fbTO_Transport : FB_TimeOutError(9001,T#2S); // Error wenn zu Flasche zulange braucht
 	
+	bBandExecute : BOOL;
+	bBandHalt    : BOOL;
+    
 	bStop : BOOL;
 	fbBand : FB_CNV;
 END_VAR
@@ -42,6 +46,13 @@ END_VAR
 	bError=> bError, 
 	ErrorID=> ErrorID);
 
+fbBand(
+    bEnable  := IFC_HW.bEnable,        
+    bExecute := bBandExecute, // Fahrbefehl vom Transport-Baustein
+    bHalt    := bBandHalt,    // Bremsbefehl vom Transport-Baustein
+    rVel     := 50.0,                 
+    ax       := IFC_HW.ax_BandMotor    
+);
 
 // Übergeordnete Sicherheit
 IF NOT bEnable THEN
@@ -56,8 +67,8 @@ bStop := ifc_Hw.bStop;
 CASE nState OF
     0: // Ready
         eState := E_State.Ready;
-        fbBand.bExecute := FALSE;
-        fbBand.bHalt := FALSE;
+        bBandExecute := FALSE;
+        bBandHalt := FALSE;
         
         // Zylinder geschlossen
         bHub1 := FALSE;
@@ -79,7 +90,7 @@ CASE nState OF
         
     2: // Start Conveyor 
 		eState := E_State.Production;
-       	fbBand.bExecute := TRUE;
+       	bBandExecute := TRUE;
         nState := 3;
         
     3: // Production
@@ -98,21 +109,21 @@ CASE nState OF
         nState := 5;
 
     5: // Stop Conveyor 
-		fbBand.bExecute := FALSE;
-		fbBand.bHalt := TRUE; // Bremsbefehl
+		bBandExecute := FALSE;
+		bBandHalt := TRUE; // Bremsbefehl
         nState := 6;
         
     6: // Done
         eState := E_State.Done;
-        fbBand.bHalt := FALSE;
+        bBandHalt := FALSE;
         
         IF NOT bExecute THEN
             nState := 0;
         END_IF
 	99: // Error State 
         eState := E_State.Error;
-        fbBand.bExecute := FALSE; 
-        fbBand.bHalt    := TRUE; 
+        bBandExecute := FALSE; 
+        bBandHalt    := TRUE; 
         
         // Schleusen schließen
         bHub1 := FALSE;
@@ -124,7 +135,7 @@ CASE nState OF
         END_IF
 
     100: // Reset
-        fbBand.bHalt := FALSE;
+        bBandHalt := FALSE;
         IF NOT bError THEN 
             IF nMemState = 3 THEN
                 nState := 2;

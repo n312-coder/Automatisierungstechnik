@@ -29,7 +29,7 @@ END_VAR
 VAR
     nState : INT;
 	nMemState: INT;
-	fbTO_Transport : FB_TimeOutError(9001,T#2S); // Error wenn zu Flasche zulange braucht
+	fbTO_Transport : FB_TimeOutError(9001,T#10S); // Error wenn zu Flasche zulange braucht
 	
 	bBandExecute : BOOL;
 	bBandHalt    : BOOL;

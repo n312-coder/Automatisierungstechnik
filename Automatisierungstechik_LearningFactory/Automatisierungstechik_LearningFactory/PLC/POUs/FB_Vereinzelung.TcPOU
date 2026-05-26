@@ -10,18 +10,30 @@ VAR_INPUT
     bSens3   : BOOL; // Flasche am Band
 END_VAR
 VAR_OUTPUT
-	bGate1    : BOOL;    // Befehl: Schleuse 1 öffnen
-    bGate2    : BOOL;    // Befehl: Schleuse 2 öffnen
+	
     eStateOut : E_State; // Aktueller Betriebszustand
 END_VAR
 VAR
 	nState  : INT := 0;  // Speichert unseren aktuellen Schritt (0, 10, 11, ...)
     fbTimer : TON;       // Timer für die Wartezeiten der Zylinder
+	bGate1    : BOOL;    // Befehl: Schleuse 1 öffnen
+    bGate2    : BOOL;    // Befehl: Schleuse 2 öffnen
+	fbRelaisZyl1   : FB_RCrtl; // Schleuse oben
+    fbRelaisZyl2   : FB_RCrtl; // Schleuse unten
+	
 END_VAR
 ]]></Declaration>
     <Implementation>
       <ST><![CDATA[// Timer Starten
 fbTimer();
+
+// Instanzierung Schläusen
+fbRelaisZyl1(bIn := bGate1);
+fbRelaisZyl2(bIn := bGate2);
+IFC_HW.bR1AKT1 := fbRelaisZyl1.bQ1;
+IFC_HW.bR2AKT1 := fbRelaisZyl1.bQ2;
+IFC_HW.bR1AKT2 := fbRelaisZyl2.bQ1;
+IFC_HW.bR2AKT2 := fbRelaisZyl2.bQ2;
 
 // Not-Aus
 IF NOT bEnable THEN

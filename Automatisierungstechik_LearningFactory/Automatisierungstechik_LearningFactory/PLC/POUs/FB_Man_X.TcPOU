@@ -1,0 +1,251 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="FB_Man_X" Id="{a582f58c-ea54-4df0-a7a5-b6e3e4d79fbe}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_Man_X
+VAR_INPUT
+    bEnable         : BOOL;  // Reglerfreigabe generelle
+    bExecute        : BOOL;  // Startet die absolute Positionierfahrt
+    bHalt           : BOOL;  // Sanftes Abbremsen (für normalen Ablauf)
+    
+    // Sensoren (True = betätigt / belegt)
+    bEndSchalterMin : BOOL;  // Linker Endschalter (Gleichzeitig unser Referenzschalter!)
+    bEndSchalterMax : BOOL;  // Rechter Endschalter
+    
+    // Fahrparameter
+    fPosition       : LREAL; // Zielposition für die absolute Fahrt
+    fVelocity       : LREAL; // Zielgeschwindigkeit
+    pHome           : LREAL; // Positionswert, der bei Referenzierung gesetzt wird (z.B. 0.0)
+END_VAR
+
+VAR_OUTPUT
+    eState          : E_State; // Zustandsausgabe für die Main
+    fActPos         : LREAL;   // Aktuelle Position für die Anzeige
+END_VAR
+
+VAR_IN_OUT
+    ax              : AXIS_REF; // Verknüpfung zur NC-Achse
+END_VAR
+
+VAR
+    // Interne State-Machine Variablen
+    nState          : INT;
+    bStop           : BOOL;     // Lokale Kopie vom globalen Not-Halt (aus ifc_hw.bStop)
+    
+    // --- Motion Control Bausteine (Tc2_MC2 Bibliothek) ---
+    mcPower         : MC_Power;
+    mcReset         : MC_Reset;
+    mcVelocity      : MC_MoveVelocity; // Für die Suchfahrt zum Endschalter
+    mcMoveAbs       : MC_MoveAbsolute; // Für die normale Positionierung
+    mcHalt          : MC_Halt;         // Für sanften Stopp
+    mcStop          : MC_Stop;         // Für sofortigen Stopp (Fehler/Not-Halt)
+    mcSetPos        : MC_SetPosition;  // Zum Nullen der Achse am Endschalter
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// Fehlerüberwachung (Sammelt Errors von allen genutzten MC-Bausteinen)
+IF (ax.Status.Error OR mcMoveAbs.Error OR mcVelocity.Error OR mcSetPos.Error) AND nState <> 100 THEN
+    nState := 99;
+END_IF
+
+bStop := ifc_Hw.bStop; // Globale Stop-Variable einlesen
+
+// States
+CASE nState OF
+    0: // Off
+        eState := E_State.Off;
+        mcPower.Enable := FALSE;
+        mcVelocity.Execute := FALSE;
+        mcMoveAbs.Execute := FALSE;
+        mcHalt.Execute := FALSE;
+        mcStop.Execute := FALSE;
+        mcReset.Execute := FALSE;
+        mcSetPos.Execute := FALSE;
+        
+        IF bEnable THEN
+            nState := 1;
+        END_IF
+        
+    1: // Init (Power On)
+        eState := E_State.Init;
+        mcPower.Enable := TRUE;
+        // Die Freigaben werden beim Aufruf unten mit den Endschaltern verriegelt!
+        
+        IF mcPower.Status THEN 
+            nState := 10; // Gehe zur Referenzfahrt anstatt direkt auf Ready!
+        END_IF
+        
+        // abbruch
+        IF NOT bEnable THEN nState := 0; END_IF 
+        
+    // ==========================================
+    // REFERENZFAHRT (Homing auf bEndSchalterMin)
+    // ==========================================
+    10: // Homing Start (Fahrt nach links)
+        eState := E_State.Init; // Ggf. hast du ein E_State.Homing, sonst Init lassen
+        mcVelocity.Velocity := 10.0; // Langsame Suchgeschwindigkeit!
+        mcVelocity.Direction := MC_Negative_Direction; // Nach links zum Min-Schalter
+        mcVelocity.Execute := TRUE;
+        
+        IF bEndSchalterMin THEN
+            mcVelocity.Execute := FALSE;
+            nState := 11;
+        END_IF
+        IF NOT bEnable THEN nState := 0; END_IF 
+
+    11: // Homing Stop (Am Schalter anhalten)
+        mcHalt.Execute := TRUE;
+        
+        IF mcHalt.Done THEN
+            mcHalt.Execute := FALSE;
+            nState := 12;
+        END_IF
+
+    12: // Position auf pHome (0.0) nullen
+        mcSetPos.Position := pHome; // z.B. 0.0
+        mcSetPos.Execute := TRUE;
+        
+        IF mcSetPos.Done THEN
+            mcSetPos.Execute := FALSE;
+            nState := 2; // Referenzfahrt fertig -> Ready!
+        END_IF
+        
+    // ==========================================
+    // NORMALBETRIEB
+    // ==========================================
+    2: // Ready 
+        eState := E_State.Ready;
+        mcMoveAbs.Execute := FALSE;
+        mcHalt.Execute := FALSE;
+        mcStop.Execute := FALSE;
+        
+        IF bExecute THEN
+            nState := 3; // State übergang zum Fahren
+        END_IF
+        
+        // abbruch
+        IF NOT bEnable THEN nState := 0; END_IF 
+        
+    3: // Fahre auf Zielposition
+        eState := E_State.Production;
+        mcMoveAbs.Position := fPosition;
+        mcMoveAbs.Velocity := fVelocity;
+        mcMoveAbs.Execute := TRUE;
+        
+        // Stopp oder Abbruch
+        IF bHalt OR NOT bEnable THEN
+            nState := 4;
+        ELSIF bStop THEN
+            nState := 80;
+        // Ziel erreicht
+        ELSIF mcMoveAbs.Done THEN
+            nState := 5;
+        END_IF
+        
+    4: // Halt (Sanftes Abbremsen)
+        eState := E_State.Production;
+        mcMoveAbs.Execute := FALSE;
+        mcHalt.Execute := TRUE; // Bremsvorgang einleiten
+        
+        IF mcHalt.Done THEN 
+            nState := 5;
+        END_IF
+        
+    5: // Done 
+        eState := E_State.Done;
+        mcMoveAbs.Execute := FALSE;
+        mcHalt.Execute := FALSE;
+        
+        IF NOT bEnable THEN
+            nState := 0; 
+        ELSIF NOT bExecute AND NOT bHalt THEN
+            nState := 2; // Wieder zurück auf Ready, warten auf neuen Befehl
+        END_IF
+        
+    // ==========================================
+    // NOT-HALT / STOP
+    // ==========================================
+    80: // Stop Achse (Harter Stopp)
+        mcMoveAbs.Execute := FALSE;
+        mcVelocity.Execute := FALSE;
+        mcHalt.Execute := FALSE;
+        mcStop.Execute := TRUE;
+        
+        IF mcStop.Done AND NOT bStop THEN
+            nState := 81;
+        END_IF
+        
+    81: // Stop lösen
+        mcStop.Execute := FALSE; // Execute vom Stop wegnehmen
+        nState := 2; // Zurück auf Ready (oder 3, je nachdem ob er die alte Fahrt fortsetzen soll)
+    
+    // ==========================================
+    // ERROR HANDLING
+    // ==========================================
+    99: // Error State
+        eState := E_State.Error;
+        mcPower.Enable := FALSE;
+        mcVelocity.Execute := FALSE;
+        mcMoveAbs.Execute := FALSE;
+        mcHalt.Execute := FALSE;
+        mcStop.Execute := FALSE;
+        
+        IF bEnable THEN 
+            nState := 100;
+        END_IF
+        
+    100: // Resolve / Reset
+        mcReset.Execute := TRUE;
+        
+        IF mcReset.Done THEN
+            mcReset.Execute := FALSE;
+            nState := 1; // Neustart nach Reset (Löst erneut Referenzfahrt aus!)
+        ELSIF mcReset.Error THEN
+            mcReset.Execute := FALSE;
+            nState := 99; // Reset fehlgeschlagen
+        END_IF
+        
+END_CASE
+
+// ==========================================
+// BAUSTEINE AUFRUFEN (Am Ende des Zykus)
+// ==========================================
+
+// WICHTIG: Hier verriegeln wir die Richtung direkt mit den Hardware-Endschaltern!
+mcPower(
+    Axis            := ax, 
+    Enable          := mcPower.Enable, 
+    Enable_Positive := mcPower.Enable AND bEndSchalterMax, // Stop wenn Max erreicht
+    Enable_Negative := mcPower.Enable AND bEndSchalterMin, // Stop wenn Min erreicht
+    Override        := 100.0
+);
+
+mcReset(Axis := ax, Execute := mcReset.Execute);
+
+mcVelocity(
+    Axis      := ax, 
+    Execute   := mcVelocity.Execute, 
+    Velocity  := mcVelocity.Velocity, 
+    Direction := mcVelocity.Direction
+);
+
+mcMoveAbs(
+    Axis     := ax,
+    Execute  := mcMoveAbs.Execute,
+    Position := mcMoveAbs.Position,
+    Velocity := mcMoveAbs.Velocity
+);
+
+mcHalt(Axis := ax, Execute := mcHalt.Execute);
+
+mcStop(Axis := ax, Execute := mcStop.Execute);
+
+mcSetPos(
+    Axis     := ax, 
+    Execute  := mcSetPos.Execute, 
+    Position := mcSetPos.Position
+);
+
+// Für die Anzeige im Programm:
+fActPos := ax.NcToPlc.ActPos;]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

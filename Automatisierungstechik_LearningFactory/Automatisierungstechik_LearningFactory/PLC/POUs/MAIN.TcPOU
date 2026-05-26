@@ -16,10 +16,10 @@ VAR
     // NEU: Der Werksleiter / Master (Machine Level)
     // Er steuert die oben genannten Module
     fbModul        : FB_Abfuellmodul;
-
+	fbManX         : FB_Man_X;
     // Die Hardware-Übersetzer für die Relais (Process Level)
-    fbRelaisZyl1   : FB_RCrtl; // Schleuse oben
-    fbRelaisZyl2   : FB_RCrtl; // Schleuse unten
+//     fbRelaisZyl1   : FB_RCrtl; // Schleuse oben
+//     fbRelaisZyl2   : FB_RCrtl; // Schleuse unten
     
     // Der Antrieb
     //fbBand         : FB_CNV;
@@ -45,6 +45,26 @@ fbModul(
     //bDisp3Done        := (fbDisp3.eState = E_State.Done)
 );
 
+
+fbManX(
+    // Steuerbefehle
+    bEnable         := ifc_hw.bEnable,
+    bExecute        := ifc_hw.bExecute, // Hier ggf. eine andere Variable nehmen, wenn er unabhängig vom Abfüllmodul starten soll!
+    bHalt           := FALSE,           // Aktuell nicht extern genutzt, ggf. anpassen
+    
+    // Hardware-Sensoren (Endschalter)
+    bEndSchalterMin := ifc_hw.bManEndXmin, 
+    bEndSchalterMax := ifc_hw.bManEndXmax, // Falls vorhanden, sonst FALSE
+    
+    // Fahrparameter (Können später auch aus einer Rezeptur/HMI kommen)
+    fPosition       := -500.0,  // Zielposition (Beispiel)
+    fVelocity       := 30.0,  // Zielgeschwindigkeit
+    pHome           := 0.0,   // Referenzposition am linken Anschlag
+    
+    // Verknüpfung zur NC-Achse
+    ax              := ifc_hw.ax_ManX
+);
+
 // --- 2. DIE ARBEITER FÜHREN AUS ---
 
 // Vereinzelung
@@ -62,12 +82,12 @@ IFC_HW.bAmpelRot   := fbAmpel.bLightRed;
 IFC_HW.bAmpelGelb  := fbAmpel.bLightYellow;
 IFC_HW.bAmpelGrun  := fbAmpel.bLightGreen;
 
-fbRelaisZyl1(bIn := fbModul.fbVereinzelung.bGate1);
-fbRelaisZyl2(bIn := fbModul.fbVereinzelung.bGate2);
-IFC_HW.bR1AKT1 := fbRelaisZyl1.bQ1;
-IFC_HW.bR2AKT1 := fbRelaisZyl1.bQ2;
-IFC_HW.bR1AKT2 := fbRelaisZyl2.bQ1;
-IFC_HW.bR2AKT2 := fbRelaisZyl2.bQ2;
+// fbRelaisZyl1(bIn := fbModul.fbVereinzelung.bGate1);
+// fbRelaisZyl2(bIn := fbModul.fbVereinzelung.bGate2);
+// IFC_HW.bR1AKT1 := fbRelaisZyl1.bQ1;
+// IFC_HW.bR2AKT1 := fbRelaisZyl1.bQ2;
+// IFC_HW.bR1AKT2 := fbRelaisZyl2.bQ1;
+// IFC_HW.bR2AKT2 := fbRelaisZyl2.bQ2;
 
 // Transport-Management
 // fbTransport(
@@ -127,6 +147,7 @@ IFC_HW.bR2AKT2 := fbRelaisZyl2.bQ2;
 //     ax       := IFC_HW.ax_BandMotor    
 // );
 
+bError := (fbModul.eState = E_State.Error); 	// Überprüfen ob Fehler
 ifc_hw.breset := reset;
 IF reset AND NOT bError THEN 
 	ifc_hw.bStop := FALSE;

@@ -1,0 +1,74 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1">
+  <POU Name="FB_System_LinAxis" Id="{62b8a2c4-1e6c-4784-ac5f-65f6d585c3b5}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK FB_System_LinAxis
+VAR_INPUT
+	fPos : LREAL;
+	bGripperOpen : BOOL;
+	PosSensMin : INT;
+	PosSensMax : INT;
+END_VAR
+VAR_OUTPUT
+	bSensMin : BOOL;
+	bSensMax : BOOL;
+END_VAR
+VAR
+	iBottlePosX : INT;
+	iAxPos: INT;
+	fAxPosOff : LREAL;
+	
+	nState : INT := 0;
+	rTrig : F_Trig;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[IF iAxPos <= -189 THEN
+	bSensMin := FALSE;
+	bSensMax := TRUE;
+ELSIF iAxPos >= 241 THEN
+	bSensMin := TRUE;
+	bSensMax := FALSE;
+ELSE
+	bSensMin := TRUE;
+	bSensMax := TRUE;
+END_IF
+
+
+// State Machine Implementieren...
+CASE nState OF
+// Offset differenz bei Homing
+0:
+IF fPos > 9999999900 THEN
+	fAxPosOff := 9999999999.9999;
+ELSIF fPos < -9999999900 THEN
+	fAxPosOff := -9999999999.9999;
+ELSIF fPos < 9990000000 AND fPos > -9999999000 THEN
+	fAxPosOff := 0;
+END_IF
+
+rTrig(CLK:= NOT bSensMin, Q=>);
+IF rTrig.Q  THEN
+	nState := 1;
+END_IF
+
+1:
+
+IF fPos > -999999 AND fpos < 999999 THEN
+	fAxPosOff := 269; // falscher Offset!!!!
+END_IF
+
+END_CASE
+
+
+IF fPos-fAxPosOff > 9999999990 OR fPos-fAxPosOff < -9999999990 THEN
+	iAxPos := 0;
+ELSE
+	iAxPos := TO_INT((fPos-fAxPosOff) * 0.7);
+END_IF
+
+IF NOT bGripperOpen THEN
+	iBottlePosX := iAxPos;
+END_IF]]></ST>
+    </Implementation>
+  </POU>
+</TcPlcObject>

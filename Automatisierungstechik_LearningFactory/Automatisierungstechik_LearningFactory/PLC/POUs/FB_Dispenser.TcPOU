@@ -3,7 +3,7 @@
   <POU Name="FB_Dispenser" Id="{45c5944d-3719-4462-a8a5-5f2b98f99738}" SpecialFunc="None">
     <Declaration><![CDATA[FUNCTION_BLOCK FB_Dispenser
 VAR_IN_OUT
-    ax : AXIS_REF; // Die Referenz zum echten Spindel-Motor!
+    ax : AXIS_REF;
 END_VAR
 VAR_INPUT
     bEnable      : BOOL;
@@ -23,43 +23,37 @@ VAR
     bMoveExec : BOOL;
 END_VAR]]></Declaration>
     <Implementation>
-      <ST><![CDATA[// =========================================================
-// 1. FEHLER ABFANGEN (Keine Guillotine mehr!)
-// =========================================================
+      <ST><![CDATA[// Fehlerabfrage
 IF ax.Status.Error AND nState <> 100 THEN
     nState := 99; 
 END_IF
 
-// =========================================================
-// 2. DIE SCHRITTKETTE (Das Gehirn)
-// =========================================================
+// State Machine
 CASE nState OF
-    0: // OFF / Grundstellung
+    0: // Grundstellung
         eState := E_State.Off;
         bMoveExec := FALSE; 
-        mcPower.Enable := FALSE; // <-- Die Schrittkette schaltet den Strom aus!
+        mcPower.Enable := FALSE;
         
         IF bEnable THEN nState := 1; END_IF
 
-    1: // READY / Warten auf Chef
+    1: // Warten auf Startsignal
         eState := E_State.Ready;
-        mcPower.Enable := TRUE; // <-- Die Schrittkette schaltet den Strom an!
+        mcPower.Enable := TRUE;
         
-        IF NOT bEnable THEN nState := 0; END_IF // Hier ist Ausschalten sicher
+        IF NOT bEnable THEN nState := 0; END_IF
         IF bExecute THEN nState := 2; END_IF
 
-    2: // Warten auf Flasche (Sensor vor Ort)
-        IF NOT bEnable THEN nState := 0; END_IF // Hier ist Ausschalten sicher
+    2: // Warten auf Flasche
+        IF NOT bEnable THEN nState := 0; END_IF
         
         IF bSensFlasche THEN
             nState := 3;
         END_IF
 
-    3: // BEFÜLLEN (Aktion)
+    3: // Befüllen der Flasche
         eState := E_State.Production;
         bMoveExec := TRUE; 
-        
-        // WICHTIG: Kein "IF NOT bEnable" hier! Er macht den Schuss erst stur zu Ende.
         
         IF mcMove.Done THEN
             bMoveExec := FALSE; 
@@ -68,49 +62,42 @@ CASE nState OF
         
         IF mcMove.Error OR ax.Status.Error THEN
             bMoveExec := FALSE; 
-            nState := 99; // Ab in den Error-State!
+            nState := 99; // Error-State
         END_IF
 
-    4: // DONE / Meldung an den Chef
+    4: // Fertig
         eState := E_State.Done;
         
-        IF NOT bEnable THEN nState := 0; END_IF // Flasche ist voll, Ausschalten wieder sicher!
+        IF NOT bEnable THEN nState := 0; END_IF
         IF NOT bExecute THEN nState := 1; END_IF
         
-    99: // ERROR (Sicherheits-Halt)
+    99: // Error
         eState := E_State.Error;
         bMoveExec := FALSE;
         mcPower.Enable := FALSE;
-        mcReset.Execute := FALSE; // Reset sicherheitshalber aus
+        mcReset.Execute := FALSE;
         
-        // Wenn der Bediener die Anlage wieder einschaltet, versuchen wir die Achse zu retten!
+		// Reset bei bEnable
         IF bEnable THEN 
             nState := 100; 
         END_IF
         
-    100: // RESET DURCHFÜHREN (Virtuelles F8)
-        mcReset.Execute := TRUE; // Sende den Reset-Befehl an die Achse
+    100: // Reset
+        mcReset.Execute := TRUE;
         
-        IF mcReset.Done THEN
-            // Erfolgreich repariert!
+        IF mcReset.Done THEN	// Erfolgreich -> Grundstellung
             mcReset.Execute := FALSE;
-            nState := 1; // Zurück in die normale Bereitschaft
+            nState := 0;
             
-        ELSIF mcReset.Error THEN
-            // Reset fehlgeschlagen (Fehler liegt noch physisch an)
+        ELSIF mcReset.Error THEN	// Fehler -> ErrorState
             mcReset.Execute := FALSE;
-            nState := 99; // Zurück in den harten Fehler-State
+            nState := 99;
         END_IF
         
 END_CASE
 
-// =========================================================
-// 3. BAUSTEINE AUFRUFEN (Die Muskeln - IMMER GANZ UNTEN!)
-// =========================================================
-
 mcPower(
     Axis := ax, 
-    // Enable wurde in der Schrittkette gesetzt! Er behält den Wert automatisch.
     Enable_Positive := TRUE, 
     Enable_Negative := TRUE, 
     Override := 100.0
@@ -118,11 +105,11 @@ mcPower(
 
 mcMove(
     Axis := ax, 
-    Execute := bMoveExec, // Hört auf die Schrittkette!
-    Distance := 50.0,      
-    Velocity := 30.0,      
-    Acceleration := 100.0, 
-    Deceleration := 100.0
+    Execute := bMoveExec,
+    Distance := 1440.0,      // Umdrehungen
+    Velocity := 360.0,      // Umdrehungen pro Sekunde
+    Acceleration := 2000.0,
+    Deceleration := 2000.0
 );
 
 mcReset(

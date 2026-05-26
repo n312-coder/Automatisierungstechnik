@@ -19,6 +19,9 @@
     <CompilerDefines>VISU_USEPROPERTYINFO</CompilerDefines>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="DUTs\Betriebszustand.TcDUT">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="GlobalTextList.TcGTLO">
       <SubType>Code</SubType>
     </Compile>
@@ -35,6 +38,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\MAIN.TcPOU">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="POUs\Manipulator\FB_System_LinAxis.TcPOU">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="POUs\Vereinzelung\FB_SpeicherRohr.TcPOU">
@@ -56,6 +62,7 @@
     <Folder Include="GVLs" />
     <Folder Include="POUs\Förderband" />
     <Folder Include="POUs\Extruder" />
+    <Folder Include="POUs\Manipulator" />
     <Folder Include="POUs\Vereinzelung" />
     <Folder Include="VISUs" />
     <Folder Include="POUs" />

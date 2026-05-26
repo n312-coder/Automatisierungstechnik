@@ -11,23 +11,23 @@ VAR_OUTPUT
     bLightGreen  : BOOL;
 END_VAR
 VAR
-	fbTimer      : TON;   // Unser Timer
-    bBlinkSignal : BOOL;  // Wechselt jede halbe Sekunde
+	fbTimer      : TON;   // Timer
+    bBlinkSignal : BOOL;  // Wechsel
 END_VAR
 ]]></Declaration>
     <Implementation>
-      <ST><![CDATA[// 1. Erstmal alle Lichter standardmäßig ausschalten
+      <ST><![CDATA[// Grundstellung -> alles aus
 bLightRed    := FALSE;
 bLightYellow := FALSE;
 bLightGreen  := FALSE;
 
-// Blinker-Signal erzeugen (Takt: 500ms)
+// Blink Signal
 fbTimer(IN := NOT fbTimer.Q, PT := T#500MS);
 IF fbTimer.Q THEN
     bBlinkSignal := NOT bBlinkSignal;
 END_IF
 
-// 2. Zustand auswerten
+// Blink Zustände
 CASE eState OF
     E_State.Off:
         bLightRed := TRUE;

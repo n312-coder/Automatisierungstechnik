@@ -23,6 +23,7 @@ VAR
     
     // Der Antrieb
     //fbBand         : FB_CNV;
+	fbiot : FB_IOT;
 	
 	//reset
 	reset : BOOL;
@@ -31,6 +32,11 @@ END_VAR
 ]]></Declaration>
     <Implementation>
       <ST><![CDATA[// --- 1. DER CHEF GIBT DIE BEFEHLE (Hierarchisches Modul) ---
+
+fbiot(iUSS1 := IFC_HW.iFillSens1, iUSS2 := IFC_HW.iFillSens2, iUSS3 := IFC_HW.iFillSens3);
+//fbiot(iUSS1 := iIn_USS1, iUSS2 := iIn_USS2, iUSS3 := iIn_USS3);
+
+
 fbModul(
     bEnable := IFC_HW.bEnable,
     bExecute := IFC_HW.bExecute,

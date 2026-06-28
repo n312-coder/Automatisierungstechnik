@@ -60,11 +60,12 @@ fbManX(
     
     // Hardware-Sensoren (Endschalter)
     bEndSchalterMin := ifc_hw.bManEndXmin, 
-    bEndSchalterMax := ifc_hw.bManEndXmax, // Falls vorhanden, sonst FALSE
+    bEndSchalterMax := ifc_hw.bManEndXmax, 
+	bSens4			:= ifc_hw.bBandSens4, 
     
     // Fahrparameter (Können später auch aus einer Rezeptur/HMI kommen)
-    fPosition       := -500.0,  // Zielposition (Beispiel)
-    fVelocity       := 30.0,  // Zielgeschwindigkeit
+    fPosition       := 700.0,  // Zielposition (Beispiel)
+    fVelocity       := 50.0,  // Zielgeschwindigkeit
     pHome           := 0.0,   // Referenzposition am linken Anschlag
     
     // Verknüpfung zur NC-Achse

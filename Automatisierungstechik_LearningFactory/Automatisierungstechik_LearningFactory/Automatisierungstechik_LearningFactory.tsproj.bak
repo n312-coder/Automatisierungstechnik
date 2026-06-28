@@ -2282,7 +2282,7 @@ External Setpoint Generation:
 				</Instance>
 			</Project>
 			<Project GUID="{8CBAC867-9161-4211-8B4B-9BF7FC9D4B00}" Name="PLC" PrjFilePath="PLC\PLC.plcproj" TmcFilePath="PLC\PLC.tmc" ReloadTmc="true" AmsPort="851" FileArchiveSettings="#x000e" SymbolicMapping="true">
-				<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcHash="{C50948B6-EEE0-99DB-4D3F-06F8B222737C}" TmcPath="PLC\PLC.tmc">
+				<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcHash="{86515414-FCA8-80C4-64F3-6F9E6EA44BBF}" TmcPath="PLC\PLC.tmc">
 					<Name>PLC Instance</Name>
 					<CLSID ClassFactory="TcPlc30">{08500001-0000-0000-F000-000000000064}</CLSID>
 					<Vars VarGrpType="2" AreaNo="1">
@@ -2479,6 +2479,11 @@ External Setpoint Generation:
 							<Type>UINT</Type>
 						</Var>
 						<Var>
+							<Name>IFC_HW.bManEndXmin</Name>
+							<Comment><![CDATA[ Manipulator min Endschalter Achse x]]></Comment>
+							<Type>BOOL</Type>
+						</Var>
+						<Var>
 							<Name>IFC_HW.iTempSens1</Name>
 							<Comment><![CDATA[ Temperatursensor 1]]></Comment>
 							<Type>UINT</Type>
@@ -2487,11 +2492,6 @@ External Setpoint Generation:
 							<Name>IFC_HW.iTempSens2</Name>
 							<Comment><![CDATA[ Temperatursensor 2]]></Comment>
 							<Type>UINT</Type>
-						</Var>
-						<Var>
-							<Name>IFC_HW.bManEndXmin</Name>
-							<Comment><![CDATA[ Manipulator min Endschalter Achse x]]></Comment>
-							<Type>BOOL</Type>
 						</Var>
 						<Var>
 							<Name>IFC_HW.bManEndYmin</Name>
@@ -2562,7 +2562,7 @@ External Setpoint Generation:
 				</Instance>
 			</Project>
 			<Project GUID="{4EFB2AFB-2EB8-4DAB-994F-E7682549AF3E}" Name="LF_System_PLC" PrjFilePath="LF_System_PLC\LF_System_PLC.plcproj" TmcFilePath="LF_System_PLC\LF_System_PLC.tmc" ReloadTmc="true" AmsPort="852" FileArchiveSettings="#x000e" SymbolicMapping="true">
-				<Instance Id="#x08502040" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcHash="{2E7D1B76-4330-01F0-1B9B-7EFFE7D4D003}" TmcPath="LF_System_PLC\LF_System_PLC.tmc">
+				<Instance Id="#x08502040" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcHash="{D90B33BC-0D40-D199-0E59-DF30F7544F71}" TmcPath="LF_System_PLC\LF_System_PLC.tmc">
 					<Name>LF_System_PLC Instance</Name>
 					<CLSID ClassFactory="TcPlc30">{08500001-0000-0000-F000-000000000064}</CLSID>
 					<Vars VarGrpType="2" AreaNo="1">

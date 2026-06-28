@@ -10,7 +10,7 @@ VAR_INPUT
     // Sensoren (True = betätigt / belegt)
     bEndSchalterMin : BOOL;  // Linker Endschalter (Gleichzeitig unser Referenzschalter!)
     bEndSchalterMax : BOOL;  // Rechter Endschalter
-    
+	bSens4			: BOOL;  //Sensor Bandende
     // Fahrparameter
     fPosition       : LREAL; // Zielposition für die absolute Fahrt
     fVelocity       : LREAL; // Zielgeschwindigkeit
@@ -30,7 +30,7 @@ VAR
     // Interne State-Machine Variablen
     nState          : INT;
     bStop           : BOOL;     // Lokale Kopie vom globalen Not-Halt (aus ifc_hw.bStop)
-    
+
     // --- Motion Control Bausteine (Tc2_MC2 Bibliothek) ---
     mcPower         : MC_Power;
     mcReset         : MC_Reset;
@@ -47,6 +47,11 @@ IF (ax.Status.Error OR mcMoveAbs.Error OR mcVelocity.Error OR mcSetPos.Error) AN
 END_IF
 
 bStop := ifc_Hw.bStop; // Globale Stop-Variable einlesen
+
+//Stopen über fiktiven NOT-Aus(bStop) oder bEnable
+IF (bStop OR NOT bEnable) AND nState >= 3 AND nState < 80 THEN
+    nState := 80; 
+END_IF
 
 // States
 CASE nState OF
@@ -81,11 +86,11 @@ CASE nState OF
     // ==========================================
     10: // Homing Start (Fahrt nach links)
         eState := E_State.Init; // Ggf. hast du ein E_State.Homing, sonst Init lassen
-        mcVelocity.Velocity := 10.0; // Langsame Suchgeschwindigkeit!
+        mcVelocity.Velocity := 15.0; // Langsame Suchgeschwindigkeit!
         mcVelocity.Direction := MC_Negative_Direction; // Nach links zum Min-Schalter
         mcVelocity.Execute := TRUE;
         
-        IF bEndSchalterMin THEN
+        IF NOT bEndSchalterMin THEN
             mcVelocity.Execute := FALSE;
             nState := 11;
         END_IF
@@ -111,53 +116,74 @@ CASE nState OF
     // ==========================================
     // NORMALBETRIEB
     // ==========================================
-    2: // Ready 
+   2: // Ready 
         eState := E_State.Ready;
-        mcMoveAbs.Execute := FALSE;
+        mcVelocity.Execute := FALSE;
         mcHalt.Execute := FALSE;
         mcStop.Execute := FALSE;
         
-        IF bExecute THEN
-            nState := 3; // State übergang zum Fahren
+        // Warten auf das Signal (Flasche am Sensor)
+        IF bSens4 THEN
+            nState := 3; // Wechsle in den Fahrmodus nach rechts
         END_IF
         
-        // abbruch
+        // Abbruchbedingung
         IF NOT bEnable THEN nState := 0; END_IF 
         
-    3: // Fahre auf Zielposition
+    // ==========================================
+    // ZYKLUS: FLASCHE WEGBRINGEN (NACH RECHTS)
+    // ==========================================
+    3: // Fahre endlos nach rechts, bis Sensor erreicht
         eState := E_State.Production;
-        mcMoveAbs.Position := fPosition;
-        mcMoveAbs.Velocity := fVelocity;
-        mcMoveAbs.Execute := TRUE;
+        mcVelocity.Velocity := 50.0; // Deine gewünschte Geschwindigkeit
+        mcVelocity.Direction := MC_Positive_Direction; // Richtung rechts
+        mcVelocity.Execute := TRUE;
         
-        // Stopp oder Abbruch
-        IF bHalt OR NOT bEnable THEN
-            nState := 4;
+        // Sobald der rechte Sensor abfällt (Flasche/Achse angekommen)
+        IF NOT bEndSchalterMax THEN 
+            mcVelocity.Execute := FALSE;
+            nState := 4; // Bremsvorgang einleiten
+        // Globaler Stop
         ELSIF bStop THEN
             nState := 80;
-        // Ziel erreicht
-        ELSIF mcMoveAbs.Done THEN
-            nState := 5;
         END_IF
+
         
-    4: // Halt (Sanftes Abbremsen)
+    4: // Halt am rechten Ende (Sanftes Abbremsen)
         eState := E_State.Production;
-        mcMoveAbs.Execute := FALSE;
-        mcHalt.Execute := TRUE; // Bremsvorgang einleiten
+        mcHalt.Execute := TRUE; 
         
         IF mcHalt.Done THEN 
-            nState := 5;
+            mcHalt.Execute := FALSE;
+            nState := 5; // Direkt in die Rückfahrt übergehen
         END_IF
+
+    // ==========================================
+    // ZYKLUS: RÜCKFAHRT ZURÜCK ZUM START (NACH LINKS)
+    // ==========================================
+    5: // Fahre endlos nach links, bis linker Sensor erreicht
+        eState := E_State.Production;
+        mcVelocity.Velocity := 50.0; // Ggf. etwas schneller für die Leerfahrt?
+        mcVelocity.Direction := MC_Negative_Direction; // Richtung links
+        mcVelocity.Execute := TRUE;
         
-    5: // Done 
-        eState := E_State.Done;
-        mcMoveAbs.Execute := FALSE;
-        mcHalt.Execute := FALSE;
+        // Sobald der linke Sensor abfällt (Achse wieder auf Startposition)
+        IF NOT bEndSchalterMin THEN 
+            mcVelocity.Execute := FALSE;
+            nState := 6; // Bremsvorgang einleiten
+        // Globaler Stop
+        ELSIF bStop THEN
+            nState := 80;
+        END_IF
+		
+
+    6: // Halt am linken Ende (Sanftes Abbremsen)
+        eState := E_State.Production;
+        mcHalt.Execute := TRUE; 
         
-        IF NOT bEnable THEN
-            nState := 0; 
-        ELSIF NOT bExecute AND NOT bHalt THEN
-            nState := 2; // Wieder zurück auf Ready, warten auf neuen Befehl
+        IF mcHalt.Done THEN 
+            mcHalt.Execute := FALSE;
+            nState := 2; // Wieder zurück auf Ready, warten auf nächste Flasche (bSens4)
         END_IF
         
     // ==========================================

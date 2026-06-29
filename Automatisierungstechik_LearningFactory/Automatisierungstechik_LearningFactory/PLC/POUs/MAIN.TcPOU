@@ -40,6 +40,7 @@ fbiot(iUSS1 := IFC_HW.iFillSens1, iUSS2 := IFC_HW.iFillSens2, iUSS3 := IFC_HW.iF
 fbModul(
     bEnable := IFC_HW.bEnable,
     bExecute := IFC_HW.bExecute,
+	bManipulatorBandFrei := fbManX.bBandFrei,
 	//bTransportError := fbTransport.bError, 
     bReset := reset,
     
@@ -55,21 +56,23 @@ fbModul(
 fbManX(
     // Steuerbefehle
     bEnable         := ifc_hw.bEnable,
-    bExecute        := ifc_hw.bExecute, // Hier ggf. eine andere Variable nehmen, wenn er unabhängig vom Abfüllmodul starten soll!
-    bHalt           := FALSE,           // Aktuell nicht extern genutzt, ggf. anpassen
+    bExecute        := ifc_hw.bExecute, 
+    bHalt           := FALSE,           
     
     // Hardware-Sensoren (Endschalter)
     bEndSchalterMin := ifc_hw.bManEndXmin, 
     bEndSchalterMax := ifc_hw.bManEndXmax, 
-	bSens4			:= ifc_hw.bBandSens4, 
+    bSens4          := ifc_hw.bBandSens4, 
     
-    // Fahrparameter (Können später auch aus einer Rezeptur/HMI kommen)
-    fPosition       := 700.0,  // Zielposition (Beispiel)
-    fVelocity       := 50.0,  // Zielgeschwindigkeit
-    pHome           := 0.0,   // Referenzposition am linken Anschlag
+    // Fahrparameter 
+    fPosition       := 700.0,  
+    fVelocity       := 50.0,  
+    pHome           := 0.0,   
     
-    // Verknüpfung zur NC-Achse
-    ax              := ifc_hw.ax_ManX
+    // Verknüpfung zu den NC-Achsen (VAR_IN_OUT)
+    ax              := ifc_hw.ax_ManX,
+    axY             := ifc_hw.ax_ManY,
+    axZ             := ifc_hw.ax_ManZ
 );
 
 // --- 2. DIE ARBEITER FÜHREN AUS ---

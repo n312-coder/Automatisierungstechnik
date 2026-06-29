@@ -22,15 +22,15 @@ VAR_OUTPUT
     eState          : E_State; // Zustandsausgabe für die Main
     fActPos         : LREAL;   // Aktuelle Position für die Anzeige (X)
     
-    // NEU: Greifer und Freigabe
+    // Greifer und Freigabe
     bGreifer        : BOOL;    // TRUE = Greifer zu, FALSE = Greifer auf
     bBandFrei       : BOOL;    // TRUE = Flasche weg, nächstes Modul darf starten!
 END_VAR
 
 VAR_IN_OUT
     ax              : AXIS_REF; // Verknüpfung zur NC-Achse X
-    axY             : AXIS_REF; // NEU: Verknüpfung zur virtuellen Achse Y
-    axZ             : AXIS_REF; // NEU: Verknüpfung zur virtuellen Achse Z
+    axY             : AXIS_REF; // Verknüpfung zur virtuellen Achse Y
+    axZ             : AXIS_REF; // Verknüpfung zur virtuellen Achse Z
 END_VAR
 
 VAR
@@ -57,22 +57,28 @@ VAR
     mcMoveAbsZ      : MC_MoveAbsolute;
 END_VAR]]></Declaration>
     <Implementation>
-      <ST><![CDATA[// Fehlerüberwachung (Sammelt Errors von allen genutzten MC-Bausteinen)
-IF (ax.Status.Error OR mcMoveAbs.Error OR mcVelocity.Error OR mcSetPos.Error) AND nState <> 100 THEN
+      <ST><![CDATA[// Timer für den Greifer aufrufen
+fbTimer();
+
+// Fehlerüberwachung
+IF (ax.Status.Error OR axY.Status.Error OR axZ.Status.Error OR mcMoveAbs.Error OR mcVelocity.Error OR mcSetPos.Error) AND nState <> 100 THEN
     nState := 99;
 END_IF
 
 bStop := ifc_Hw.bStop; // Globale Stop-Variable einlesen
 
-//Stopen über fiktiven NOT-Aus(bStop) oder bEnable
+// Stopen über Not-Aus (bStop) oder bEnable weg
 IF (bStop OR NOT bEnable) AND nState >= 3 AND nState < 80 THEN
     nState := 80; 
 END_IF
 
-// States
+// State Maschine
 CASE nState OF
     0: // Off
         eState := E_State.Off;
+        bBandFrei := FALSE;
+        bGreifer  := FALSE;
+        
         mcPower.Enable := FALSE;
         mcVelocity.Execute := FALSE;
         mcMoveAbs.Execute := FALSE;
@@ -87,22 +93,17 @@ CASE nState OF
         
     1: // Init (Power On)
         eState := E_State.Init;
-        mcPower.Enable := TRUE;
-        // Die Freigaben werden beim Aufruf unten mit den Endschaltern verriegelt!
+        mcPower.Enable := TRUE; // Startet auch Y und Z unten!
         
         IF mcPower.Status THEN 
-            nState := 10; // Gehe zur Referenzfahrt anstatt direkt auf Ready!
+            nState := 10; // Gehe zur Referenzfahrt für X
         END_IF
-        
-        // abbruch
         IF NOT bEnable THEN nState := 0; END_IF 
         
-    // ==========================================
-    // REFERENZFAHRT (Homing auf bEndSchalterMin)
-    // ==========================================
+    // Referenzfahrt
     10: // Homing Start (Fahrt nach links)
-        eState := E_State.Init; // Ggf. hast du ein E_State.Homing, sonst Init lassen
-        mcVelocity.Velocity := 15.0; // Langsame Suchgeschwindigkeit!
+        eState := E_State.Init; 
+        mcVelocity.Velocity := 15.0; 
         mcVelocity.Direction := MC_Negative_Direction; // Nach links zum Min-Schalter
         mcVelocity.Execute := TRUE;
         
@@ -110,18 +111,16 @@ CASE nState OF
             mcVelocity.Execute := FALSE;
             nState := 11;
         END_IF
-        IF NOT bEnable THEN nState := 0; END_IF 
 
     11: // Homing Stop (Am Schalter anhalten)
         mcHalt.Execute := TRUE;
-        
         IF mcHalt.Done THEN
             mcHalt.Execute := FALSE;
             nState := 12;
         END_IF
 
     12: // Position auf pHome (0.0) nullen
-        mcSetPos.Position := pHome; // z.B. 0.0
+        mcSetPos.Position := pHome;
         mcSetPos.Execute := TRUE;
         
         IF mcSetPos.Done THEN
@@ -129,86 +128,133 @@ CASE nState OF
             nState := 2; // Referenzfahrt fertig -> Ready!
         END_IF
         
-    // ==========================================
-    // NORMALBETRIEB
-    // ==========================================
-   2: // Ready 
+    // Betriebsmodus
+    2: // Ready 
         eState := E_State.Ready;
         mcVelocity.Execute := FALSE;
         mcHalt.Execute := FALSE;
         mcStop.Execute := FALSE;
+        bBandFrei := FALSE; // Blockiert das Band, solange wir warten
         
-        // Warten auf das Signal (Flasche am Sensor)
+        // Der Manipulator startet jetzt vollautomatisch, sobald die Flasche ankommt!
         IF bSens4 THEN
-            nState := 3; // Wechsle in den Fahrmodus nach rechts
+            nState := 20;
         END_IF
+        IF NOT bEnable THEN nState := 0; END_IF
         
-        // Abbruchbedingung
-        IF NOT bEnable THEN nState := 0; END_IF 
-        
-    // ==========================================
-    // ZYKLUS: FLASCHE WEGBRINGEN (NACH RECHTS)
-    // ==========================================
-    3: // Fahre endlos nach rechts, bis Sensor erreicht
+    // Pick and Place
+    20: // 1. Z-Achse nach unten fahren (zur Flasche)
         eState := E_State.Production;
-        mcVelocity.Velocity := 50.0; // Deine gewünschte Geschwindigkeit
-        mcVelocity.Direction := MC_Positive_Direction; // Richtung rechts
-        mcVelocity.Execute := TRUE;
+        mcMoveAbsZ.Position := 100.0; // TIEFE ANPASSEN WENN NÖTIG!
+        mcMoveAbsZ.Velocity := 150.0;
+        mcMoveAbsZ.Execute  := TRUE;
         
-        // Sobald der rechte Sensor abfällt (Flasche/Achse angekommen)
-        IF NOT bEndSchalterMax THEN 
+        IF mcMoveAbsZ.Done THEN
+            mcMoveAbsZ.Execute := FALSE;
+            nState := 21;
+        END_IF
+
+    21: // 2. Flasche greifen
+        bGreifer := TRUE; 
+        fbTimer(IN := TRUE, PT := T#0.5S); // Warten bis Greifer mechanisch zu ist
+        
+        IF fbTimer.Q THEN
+            fbTimer(IN := FALSE);
+            nState := 22;
+        END_IF
+
+    22: // 3. Z-Achse wieder hochfahren
+        mcMoveAbsZ.Position := 0.0; // Zurück auf Null (Oben)
+        mcMoveAbsZ.Execute  := TRUE;
+        
+        IF mcMoveAbsZ.Done THEN
+            mcMoveAbsZ.Execute := FALSE;
+            
+            // WICHTIG: Flasche ist in der Luft! Das Band darf weiterarbeiten!
+            bBandFrei := TRUE; 
+            nState := 23;
+        END_IF
+
+    23: // 4. X nach rechts UND Y nach hinten fahren (Gleichzeitig!)
+        // X fährt auf Endschalter Max
+        mcVelocity.Velocity  := 150.0;
+        mcVelocity.Direction := MC_Positive_Direction;
+        mcVelocity.Execute   := TRUE;
+        
+        // Y fährt auf Position
+        mcMoveAbsY.Position := 200.0; // Y-TIEFE INS LAGER ANPASSEN!
+        mcMoveAbsY.Velocity := 150.0;
+        mcMoveAbsY.Execute  := TRUE;
+        
+        // Warten, bis BEIDE angekommen sind (X am Sensor, Y am Ziel)
+        IF NOT bEndSchalterMax AND mcMoveAbsY.Done THEN 
             mcVelocity.Execute := FALSE;
-            nState := 4; // Bremsvorgang einleiten
-        // Globaler Stop
-        ELSIF bStop THEN
-            nState := 80;
+            mcMoveAbsY.Execute := FALSE;
+            mcHalt.Execute     := TRUE; // X-Achse abbremsen
+            nState := 24;
         END_IF
 
-        
-    4: // Halt am rechten Ende (Sanftes Abbremsen)
-        eState := E_State.Production;
-        mcHalt.Execute := TRUE; 
-        
-        IF mcHalt.Done THEN 
+    24: // 5. Warten bis X-Achse steht
+        IF mcHalt.Done THEN
             mcHalt.Execute := FALSE;
-            nState := 5; // Direkt in die Rückfahrt übergehen
+            nState := 25;
         END_IF
 
-    // ==========================================
-    // ZYKLUS: RÜCKFAHRT ZURÜCK ZUM START (NACH LINKS)
-    // ==========================================
-    5: // Fahre endlos nach links, bis linker Sensor erreicht
-        eState := E_State.Production;
-        mcVelocity.Velocity := 50.0; // Ggf. etwas schneller für die Leerfahrt?
-        mcVelocity.Direction := MC_Negative_Direction; // Richtung links
-        mcVelocity.Execute := TRUE;
+    25: // 6. Z-Achse nach unten (ins Lager)
+        mcMoveAbsZ.Position := 100.0; 
+        mcMoveAbsZ.Execute  := TRUE;
         
-        // Sobald der linke Sensor abfällt (Achse wieder auf Startposition)
-        IF NOT bEndSchalterMin THEN 
+        IF mcMoveAbsZ.Done THEN
+            mcMoveAbsZ.Execute := FALSE;
+            nState := 26;
+        END_IF
+
+    26: // 7. Flasche loslassen
+        bGreifer := FALSE;
+        fbTimer(IN := TRUE, PT := T#0.5S); // Warten bis Greifer offen ist
+        
+        IF fbTimer.Q THEN
+            fbTimer(IN := FALSE);
+            nState := 27;
+        END_IF
+
+    27: // 8. Z-Achse wieder hoch (ohne Flasche)
+        mcMoveAbsZ.Position := 0.0; 
+        mcMoveAbsZ.Execute  := TRUE;
+        
+        IF mcMoveAbsZ.Done THEN
+            mcMoveAbsZ.Execute := FALSE;
+            nState := 28;
+        END_IF
+
+    28: // 9. X und Y zurück zur Grundstellung (Gleichzeitig!)
+        mcVelocity.Direction := MC_Negative_Direction; // X nach links
+        mcVelocity.Execute   := TRUE;
+        
+        mcMoveAbsY.Position := 0.0; // Y wieder nach vorne
+        mcMoveAbsY.Execute  := TRUE;
+        
+        IF NOT bEndSchalterMin AND mcMoveAbsY.Done THEN 
             mcVelocity.Execute := FALSE;
-            nState := 6; // Bremsvorgang einleiten
-        // Globaler Stop
-        ELSIF bStop THEN
-            nState := 80;
+            mcMoveAbsY.Execute := FALSE;
+            mcHalt.Execute     := TRUE;
+            nState := 29;
         END_IF
-		
 
-    6: // Halt am linken Ende (Sanftes Abbremsen)
-        eState := E_State.Production;
-        mcHalt.Execute := TRUE; 
-        
-        IF mcHalt.Done THEN 
+    29: // 10. Warten bis X steht -> Fertig!
+        IF mcHalt.Done THEN
             mcHalt.Execute := FALSE;
-            nState := 2; // Wieder zurück auf Ready, warten auf nächste Flasche (bSens4)
+            bBandFrei := FALSE; // Reset für den nächsten Durchlauf
+            nState := 2; // Zurück auf Lauerstellung!
         END_IF
         
-    // ==========================================
     // NOT-HALT / STOP
-    // ==========================================
     80: // Stop Achse (Harter Stopp)
         mcMoveAbs.Execute := FALSE;
         mcVelocity.Execute := FALSE;
         mcHalt.Execute := FALSE;
+        mcMoveAbsY.Execute := FALSE;
+        mcMoveAbsZ.Execute := FALSE;
         mcStop.Execute := TRUE;
         
         IF mcStop.Done AND NOT bStop THEN
@@ -216,17 +262,17 @@ CASE nState OF
         END_IF
         
     81: // Stop lösen
-        mcStop.Execute := FALSE; // Execute vom Stop wegnehmen
-        nState := 2; // Zurück auf Ready (oder 3, je nachdem ob er die alte Fahrt fortsetzen soll)
+        mcStop.Execute := FALSE; 
+        nState := 1; // Sicherer Neustart inkl. Homing
     
-    // ==========================================
     // ERROR HANDLING
-    // ==========================================
     99: // Error State
         eState := E_State.Error;
         mcPower.Enable := FALSE;
         mcVelocity.Execute := FALSE;
         mcMoveAbs.Execute := FALSE;
+        mcMoveAbsY.Execute := FALSE;
+        mcMoveAbsZ.Execute := FALSE;
         mcHalt.Execute := FALSE;
         mcStop.Execute := FALSE;
         
@@ -239,7 +285,7 @@ CASE nState OF
         
         IF mcReset.Done THEN
             mcReset.Execute := FALSE;
-            nState := 1; // Neustart nach Reset (Löst erneut Referenzfahrt aus!)
+            nState := 1; // Neustart
         ELSIF mcReset.Error THEN
             mcReset.Execute := FALSE;
             nState := 99; // Reset fehlgeschlagen
@@ -247,47 +293,43 @@ CASE nState OF
         
 END_CASE
 
-// ==========================================
-// BAUSTEINE AUFRUFEN (Am Ende des Zykus)
-// ==========================================
+// Bausteine
 
-// WICHTIG: Hier verriegeln wir die Richtung direkt mit den Hardware-Endschaltern!
+// --- X-ACHSE ---
 mcPower(
     Axis            := ax, 
     Enable          := mcPower.Enable, 
-    Enable_Positive := mcPower.Enable AND bEndSchalterMax, // Stop wenn Max erreicht
-    Enable_Negative := mcPower.Enable AND bEndSchalterMin, // Stop wenn Min erreicht
+    Enable_Positive := mcPower.Enable AND bEndSchalterMax, 
+    Enable_Negative := mcPower.Enable AND bEndSchalterMin, 
     Override        := 100.0
 );
-
 mcReset(Axis := ax, Execute := mcReset.Execute);
-
-mcVelocity(
-    Axis      := ax, 
-    Execute   := mcVelocity.Execute, 
-    Velocity  := mcVelocity.Velocity, 
-    Direction := mcVelocity.Direction
-);
-
-mcMoveAbs(
-    Axis     := ax,
-    Execute  := mcMoveAbs.Execute,
-    Position := mcMoveAbs.Position,
-    Velocity := mcMoveAbs.Velocity
-);
-
+mcVelocity(Axis := ax, Execute := mcVelocity.Execute, Velocity := mcVelocity.Velocity, Direction := mcVelocity.Direction);
+mcMoveAbs(Axis := ax, Execute := mcMoveAbs.Execute, Position := mcMoveAbs.Position, Velocity := mcMoveAbs.Velocity);
 mcHalt(Axis := ax, Execute := mcHalt.Execute);
-
 mcStop(Axis := ax, Execute := mcStop.Execute);
+mcSetPos(Axis := ax, Execute := mcSetPos.Execute, Position := mcSetPos.Position);
+fActPos := ax.NcToPlc.ActPos;
 
-mcSetPos(
-    Axis     := ax, 
-    Execute  := mcSetPos.Execute, 
-    Position := mcSetPos.Position
+// --- Y-ACHSE (Virtuell) ---
+mcPowerY(
+    Axis            := axY, 
+    Enable          := mcPower.Enable, 
+    Enable_Positive := mcPower.Enable, // Keine Sensoren -> Immer TRUE solange Enable
+    Enable_Negative := mcPower.Enable,
+    Override        := 100.0
 );
+mcMoveAbsY(Axis := axY, Execute := mcMoveAbsY.Execute, Position := mcMoveAbsY.Position, Velocity := mcMoveAbsY.Velocity);
 
-// Für die Anzeige im Programm:
-fActPos := ax.NcToPlc.ActPos;]]></ST>
+// --- Z-ACHSE (Virtuell) ---
+mcPowerZ(
+    Axis            := axZ, 
+    Enable          := mcPower.Enable, 
+    Enable_Positive := mcPower.Enable,
+    Enable_Negative := mcPower.Enable,
+    Override        := 100.0
+);
+mcMoveAbsZ(Axis := axZ, Execute := mcMoveAbsZ.Execute, Position := mcMoveAbsZ.Position, Velocity := mcMoveAbsZ.Velocity);]]></ST>
     </Implementation>
   </POU>
 </TcPlcObject>

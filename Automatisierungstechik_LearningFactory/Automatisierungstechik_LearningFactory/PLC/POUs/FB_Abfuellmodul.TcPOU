@@ -6,6 +6,7 @@ VAR_INPUT
     bEnable  : BOOL;
     bExecute : BOOL;
     bReset   : BOOL;
+	bManipulatorBandFrei : BOOL; // Signal vom Roboter
     // Status-Rückmeldungen der Abteilungsleiter
 	
     // bVereinzelungDone : BOOL;
@@ -153,23 +154,30 @@ CASE nState OF
             END_IF
         END_IF
 
-    40: // "Übergabe zu Portalroboter" / Station 4 (PDF S.3)
-		eState := E_State.Production;
+    40: // "Übergabe zu Portalroboter" / Station 4
+        eState := E_State.Production;
         nZielStation := 4;
         bStartTransport := TRUE;
 
         IF fbTransport.eState = E_State.Done THEN
             bStartTransport := FALSE;
-            nState := 50;
+            nState := 41;
         END_IF
+
+    41: // Warten auf den Greifer!
+        eState := E_State.Production;
+        
+        IF bManipulatorBandFrei THEN
+            nState := 50; 
+        END_IF
+    // -------------------------------------
 
     50: // Done
         eState := E_State.Done;
-		
-		bFlascheAktiv := FALSE;
+        bFlascheAktiv := FALSE; // Die Flasche verschwindet erst jetzt!
 
         IF NOT bExecute THEN
-            nState := 0; // Warten auf die nächste Flasche
+            nState := 0; 
         END_IF
 	
 	99: // Error

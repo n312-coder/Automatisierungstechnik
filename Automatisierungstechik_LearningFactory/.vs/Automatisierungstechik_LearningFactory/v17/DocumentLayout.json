@@ -1,26 +1,18 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "C:\\Users\\vboxuser\\Documents\\Git_Klon_5\\Automatisierungstechik_LearningFactory\\",
+  "WorkspaceRootPath": "C:\\Users\\JanVogel\\Documents\\TcXaeShell\\29.06.2026\\Automatisierungstechik_LearningFactory\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{8CBAC867-9161-4211-8B4B-9BF7FC9D4B00}|Automatisierungstechik_LearningFactory\\PLC\\PLC.plcproj|C:\\Users\\vboxuser\\Documents\\Git_Klon_5\\Automatisierungstechik_LearningFactory\\Automatisierungstechik_LearningFactory\\PLC\\POUs\\FB_Man_X.TcPOU||{CFF47BB1-5559-4BDE-A2AF-06B30BC64F6C}",
+      "AbsoluteMoniker": "D:0:0:{8CBAC867-9161-4211-8B4B-9BF7FC9D4B00}|Automatisierungstechik_LearningFactory\\PLC\\PLC.plcproj|C:\\Users\\JanVogel\\Documents\\TcXaeShell\\29.06.2026\\Automatisierungstechik_LearningFactory\\Automatisierungstechik_LearningFactory\\PLC\\POUs\\FB_Man_X.TcPOU||{CFF47BB1-5559-4BDE-A2AF-06B30BC64F6C}",
       "RelativeMoniker": "D:0:0:{8CBAC867-9161-4211-8B4B-9BF7FC9D4B00}|Automatisierungstechik_LearningFactory\\PLC\\PLC.plcproj|solutionrelative:Automatisierungstechik_LearningFactory\\PLC\\POUs\\FB_Man_X.TcPOU||{CFF47BB1-5559-4BDE-A2AF-06B30BC64F6C}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{4EFB2AFB-2EB8-4DAB-994F-E7682549AF3E}|Automatisierungstechik_LearningFactory\\LF_System_PLC\\LF_System_PLC.plcproj|C:\\Users\\vboxuser\\Documents\\Git_Klon_5\\Automatisierungstechik_LearningFactory\\Automatisierungstechik_LearningFactory\\LF_System_PLC\\VISUs\\Visualization.TcVIS||{CFF47BB1-5559-4BDE-A2AF-06B30BC64F6C}",
-      "RelativeMoniker": "D:0:0:{4EFB2AFB-2EB8-4DAB-994F-E7682549AF3E}|Automatisierungstechik_LearningFactory\\LF_System_PLC\\LF_System_PLC.plcproj|solutionrelative:Automatisierungstechik_LearningFactory\\LF_System_PLC\\VISUs\\Visualization.TcVIS||{CFF47BB1-5559-4BDE-A2AF-06B30BC64F6C}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{4EFB2AFB-2EB8-4DAB-994F-E7682549AF3E}|Automatisierungstechik_LearningFactory\\LF_System_PLC\\LF_System_PLC.plcproj|C:\\Users\\vboxuser\\Documents\\Git_Klon_5\\Automatisierungstechik_LearningFactory\\Automatisierungstechik_LearningFactory\\LF_System_PLC\\POUs\\Manipulator\\FB_System_LinAxis.TcPOU||{CFF47BB1-5559-4BDE-A2AF-06B30BC64F6C}|Automatisierungstechik_LearningFactory.LF_System_PLC.MAIN.fbManAxX",
-      "RelativeMoniker": "D:0:0:{4EFB2AFB-2EB8-4DAB-994F-E7682549AF3E}|Automatisierungstechik_LearningFactory\\LF_System_PLC\\LF_System_PLC.plcproj|solutionrelative:Automatisierungstechik_LearningFactory\\LF_System_PLC\\POUs\\Manipulator\\FB_System_LinAxis.TcPOU||{CFF47BB1-5559-4BDE-A2AF-06B30BC64F6C}|Automatisierungstechik_LearningFactory.LF_System_PLC.MAIN.fbManAxX"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{8CBAC867-9161-4211-8B4B-9BF7FC9D4B00}|Automatisierungstechik_LearningFactory\\PLC\\PLC.plcproj|C:\\Users\\vboxuser\\Documents\\Git_Klon_5\\Automatisierungstechik_LearningFactory\\Automatisierungstechik_LearningFactory\\PLC\\POUs\\MAIN.TcPOU||{CFF47BB1-5559-4BDE-A2AF-06B30BC64F6C}",
-      "RelativeMoniker": "D:0:0:{8CBAC867-9161-4211-8B4B-9BF7FC9D4B00}|Automatisierungstechik_LearningFactory\\PLC\\PLC.plcproj|solutionrelative:Automatisierungstechik_LearningFactory\\PLC\\POUs\\MAIN.TcPOU||{CFF47BB1-5559-4BDE-A2AF-06B30BC64F6C}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{8CBAC867-9161-4211-8B4B-9BF7FC9D4B00}|Automatisierungstechik_LearningFactory\\PLC\\PLC.plcproj|C:\\Users\\vboxuser\\Documents\\Git_Klon_5\\Automatisierungstechik_LearningFactory\\Automatisierungstechik_LearningFactory\\PLC\\POUs\\FB_Abfuellmodul.TcPOU||{CFF47BB1-5559-4BDE-A2AF-06B30BC64F6C}",
+      "AbsoluteMoniker": "D:0:0:{8CBAC867-9161-4211-8B4B-9BF7FC9D4B00}|Automatisierungstechik_LearningFactory\\PLC\\PLC.plcproj|C:\\Users\\JanVogel\\Documents\\TcXaeShell\\29.06.2026\\Automatisierungstechik_LearningFactory\\Automatisierungstechik_LearningFactory\\PLC\\POUs\\FB_Abfuellmodul.TcPOU||{CFF47BB1-5559-4BDE-A2AF-06B30BC64F6C}",
       "RelativeMoniker": "D:0:0:{8CBAC867-9161-4211-8B4B-9BF7FC9D4B00}|Automatisierungstechik_LearningFactory\\PLC\\PLC.plcproj|solutionrelative:Automatisierungstechik_LearningFactory\\PLC\\POUs\\FB_Abfuellmodul.TcPOU||{CFF47BB1-5559-4BDE-A2AF-06B30BC64F6C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{4EFB2AFB-2EB8-4DAB-994F-E7682549AF3E}|Automatisierungstechik_LearningFactory\\LF_System_PLC\\LF_System_PLC.plcproj|C:\\Users\\JanVogel\\Documents\\TcXaeShell\\29.06.2026\\Automatisierungstechik_LearningFactory\\Automatisierungstechik_LearningFactory\\LF_System_PLC\\VISUs\\Visualization.TcVIS||{CFF47BB1-5559-4BDE-A2AF-06B30BC64F6C}",
+      "RelativeMoniker": "D:0:0:{4EFB2AFB-2EB8-4DAB-994F-E7682549AF3E}|Automatisierungstechik_LearningFactory\\LF_System_PLC\\LF_System_PLC.plcproj|solutionrelative:Automatisierungstechik_LearningFactory\\LF_System_PLC\\VISUs\\Visualization.TcVIS||{CFF47BB1-5559-4BDE-A2AF-06B30BC64F6C}"
     }
   ],
   "DocumentGroupContainers": [
@@ -29,44 +21,33 @@
       "VerticalTabListWidth": 256,
       "DocumentGroups": [
         {
-          "DockedWidth": 298,
+          "DockedWidth": 366,
           "SelectedChildIndex": 2,
           "Children": [
-            {
-              "$type": "Bookmark",
-              "Name": "ST:1:0:{94c070b9-db0b-4415-9311-bac4eef266f5}"
-            },
             {
               "$type": "Bookmark",
               "Name": "ST:2:0:{94c070b9-db0b-4415-9311-bac4eef266f5}"
             },
             {
+              "$type": "Bookmark",
+              "Name": "ST:1:0:{94c070b9-db0b-4415-9311-bac4eef266f5}"
+            },
+            {
               "$type": "Document",
               "DocumentIndex": 0,
               "Title": "FB_Man_X",
-              "DocumentMoniker": "C:\\Users\\vboxuser\\Documents\\Git_Klon_5\\Automatisierungstechik_LearningFactory\\Automatisierungstechik_LearningFactory\\PLC\\POUs\\FB_Man_X.TcPOU",
+              "DocumentMoniker": "C:\\Users\\JanVogel\\Documents\\TcXaeShell\\29.06.2026\\Automatisierungstechik_LearningFactory\\Automatisierungstechik_LearningFactory\\PLC\\POUs\\FB_Man_X.TcPOU",
               "RelativeDocumentMoniker": "Automatisierungstechik_LearningFactory\\PLC\\POUs\\FB_Man_X.TcPOU",
-              "ToolTip": "FB_Man_X [Automatisierungstechik_LearningFactory.PLC]*",
+              "ToolTip": "FB_Man_X [Automatisierungstechik_LearningFactory.PLC]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
               "WhenOpened": "2026-05-26T13:41:32.69Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "FB_System_LinAxis [Online]",
-              "DocumentMoniker": "C:\\Users\\vboxuser\\Documents\\Git_Klon_5\\Automatisierungstechik_LearningFactory\\Automatisierungstechik_LearningFactory\\LF_System_PLC\\POUs\\Manipulator\\FB_System_LinAxis.TcPOU",
-              "RelativeDocumentMoniker": "Automatisierungstechik_LearningFactory\\LF_System_PLC\\POUs\\Manipulator\\FB_System_LinAxis.TcPOU",
-              "ToolTip": "FB_System_LinAxis [Automatisierungstechik_LearningFactory.LF_System_PLC]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2026-05-26T13:37:36.302Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 1,
               "Title": "FB_Abfuellmodul",
-              "DocumentMoniker": "C:\\Users\\vboxuser\\Documents\\Git_Klon_5\\Automatisierungstechik_LearningFactory\\Automatisierungstechik_LearningFactory\\PLC\\POUs\\FB_Abfuellmodul.TcPOU",
+              "DocumentMoniker": "C:\\Users\\JanVogel\\Documents\\TcXaeShell\\29.06.2026\\Automatisierungstechik_LearningFactory\\Automatisierungstechik_LearningFactory\\PLC\\POUs\\FB_Abfuellmodul.TcPOU",
               "RelativeDocumentMoniker": "Automatisierungstechik_LearningFactory\\PLC\\POUs\\FB_Abfuellmodul.TcPOU",
               "ToolTip": "FB_Abfuellmodul [Automatisierungstechik_LearningFactory.PLC]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
@@ -76,25 +57,14 @@
           ]
         },
         {
-          "DockedWidth": 410,
-          "SelectedChildIndex": 1,
+          "DockedWidth": 342,
+          "SelectedChildIndex": 0,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "MAIN",
-              "DocumentMoniker": "C:\\Users\\vboxuser\\Documents\\Git_Klon_5\\Automatisierungstechik_LearningFactory\\Automatisierungstechik_LearningFactory\\PLC\\POUs\\MAIN.TcPOU",
-              "RelativeDocumentMoniker": "Automatisierungstechik_LearningFactory\\PLC\\POUs\\MAIN.TcPOU",
-              "ToolTip": "MAIN [Automatisierungstechik_LearningFactory.PLC]",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2026-05-26T11:58:29.611Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "Visualization",
-              "DocumentMoniker": "C:\\Users\\vboxuser\\Documents\\Git_Klon_5\\Automatisierungstechik_LearningFactory\\Automatisierungstechik_LearningFactory\\LF_System_PLC\\VISUs\\Visualization.TcVIS",
+              "DocumentMoniker": "C:\\Users\\JanVogel\\Documents\\TcXaeShell\\29.06.2026\\Automatisierungstechik_LearningFactory\\Automatisierungstechik_LearningFactory\\LF_System_PLC\\VISUs\\Visualization.TcVIS",
               "RelativeDocumentMoniker": "Automatisierungstechik_LearningFactory\\LF_System_PLC\\VISUs\\Visualization.TcVIS",
               "ToolTip": "Visualization [Automatisierungstechik_LearningFactory.LF_System_PLC]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",

@@ -10,7 +10,8 @@ VAR_INPUT
     // Sensoren (True = betätigt / belegt)
     bEndSchalterMin : BOOL;  // Linker Endschalter (Gleichzeitig unser Referenzschalter!)
     bEndSchalterMax : BOOL;  // Rechter Endschalter
-	bSens4			: BOOL;  //Sensor Bandende
+    bSens4          : BOOL;  // Sensor Bandende
+    
     // Fahrparameter
     fPosition       : LREAL; // Zielposition für die absolute Fahrt
     fVelocity       : LREAL; // Zielgeschwindigkeit
@@ -19,26 +20,41 @@ END_VAR
 
 VAR_OUTPUT
     eState          : E_State; // Zustandsausgabe für die Main
-    fActPos         : LREAL;   // Aktuelle Position für die Anzeige
+    fActPos         : LREAL;   // Aktuelle Position für die Anzeige (X)
+    
+    // NEU: Greifer und Freigabe
+    bGreifer        : BOOL;    // TRUE = Greifer zu, FALSE = Greifer auf
+    bBandFrei       : BOOL;    // TRUE = Flasche weg, nächstes Modul darf starten!
 END_VAR
 
 VAR_IN_OUT
-    ax              : AXIS_REF; // Verknüpfung zur NC-Achse
+    ax              : AXIS_REF; // Verknüpfung zur NC-Achse X
+    axY             : AXIS_REF; // NEU: Verknüpfung zur virtuellen Achse Y
+    axZ             : AXIS_REF; // NEU: Verknüpfung zur virtuellen Achse Z
 END_VAR
 
 VAR
     // Interne State-Machine Variablen
     nState          : INT;
     bStop           : BOOL;     // Lokale Kopie vom globalen Not-Halt (aus ifc_hw.bStop)
+    fbTimer         : TON;      // Timer für das Greifen/Loslassen
 
-    // --- Motion Control Bausteine (Tc2_MC2 Bibliothek) ---
+    // --- Motion Control Bausteine (X-Achse) ---
     mcPower         : MC_Power;
     mcReset         : MC_Reset;
-    mcVelocity      : MC_MoveVelocity; // Für die Suchfahrt zum Endschalter
-    mcMoveAbs       : MC_MoveAbsolute; // Für die normale Positionierung
-    mcHalt          : MC_Halt;         // Für sanften Stopp
-    mcStop          : MC_Stop;         // Für sofortigen Stopp (Fehler/Not-Halt)
-    mcSetPos        : MC_SetPosition;  // Zum Nullen der Achse am Endschalter
+    mcVelocity      : MC_MoveVelocity; 
+    mcMoveAbs       : MC_MoveAbsolute; 
+    mcHalt          : MC_Halt;         
+    mcStop          : MC_Stop;         
+    mcSetPos        : MC_SetPosition;  
+
+    // --- Motion Control Bausteine (Y-Achse virtuell) ---
+    mcPowerY        : MC_Power;
+    mcMoveAbsY      : MC_MoveAbsolute;
+
+    // --- Motion Control Bausteine (Z-Achse virtuell) ---
+    mcPowerZ        : MC_Power;
+    mcMoveAbsZ      : MC_MoveAbsolute;
 END_VAR]]></Declaration>
     <Implementation>
       <ST><![CDATA[// Fehlerüberwachung (Sammelt Errors von allen genutzten MC-Bausteinen)

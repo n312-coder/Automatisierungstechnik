@@ -6,60 +6,56 @@ VAR_INPUT
     bEnable  : BOOL;
     bExecute : BOOL;
     bReset   : BOOL;
-	bManipulatorBandFrei : BOOL; // Signal vom Roboter
+    
     // Status-Rückmeldungen der Abteilungsleiter
-	
     // bVereinzelungDone : BOOL;
     // bTransportDone    : BOOL;
     // bDisp1Done        : BOOL;
     // bDisp2Done        : BOOL;
     // bDisp3Done        : BOOL;
-	
-	// Error handling
-	//bTransportError : BOOL; 
     
+    // Error handling
+    //bTransportError : BOOL; 
 END_VAR
 VAR_OUTPUT
     eState   : E_State;
-    
-    
 END_VAR
 VAR
     nState : INT;
     i      : INT; // Unser Stations-Zähler (1, 2, 3)
-	bFlascheAktiv : BOOL;	// Flasche im System?
-	
-	fbVereinzelung : FB_Vereinzelung; 
+    bFlascheAktiv : BOOL;    // Flasche im System?
+    
+    fbVereinzelung : FB_Vereinzelung; 
     fbTransport    : FB_Transport;
     fbDisp1        : FB_Dispenser;
     fbDisp2        : FB_Dispenser;
     fbDisp3        : FB_Dispenser;
-	
-	// Start-Befehle
+    
+    // Start-Befehle
     bStartVereinzelung : BOOL;
     bStartTransport    : BOOL;
     nZielStation       : INT;     // Welcher Extruder ist das Ziel?
     bStartDisp1        : BOOL;
     bStartDisp2        : BOOL;
     bStartDisp3        : BOOL;
-	
-	bStop : Bool;
-	nMemState: INT;
-END_VAR
-
-]]></Declaration>
+    
+    bStop : Bool;
+    nMemState: INT;
+END_VAR]]></Declaration>
     <Implementation>
-      <ST><![CDATA[IF NOT bEnable THEN
+      <ST><![CDATA[
+
+IF NOT bEnable THEN
     nState := 0;
-	eState := E_State.Off;
+    eState := E_State.Off;
 ELSIF fbTransport.bError AND nState <> 99 THEN
-	nMemState := nState;
+    nMemState := nState;
     nState := 99;
 END_IF
 
 // neu 
 IF bStop THEN
-	nMemState := nState;
+    nMemState := nState;
 END_IF
 
 CASE nState OF
@@ -67,7 +63,7 @@ CASE nState OF
         IF bEnable THEN
             eState := E_State.Ready;
         END_IF
-		
+        
         bStartVereinzelung := FALSE;
         bStartTransport    := FALSE;
         bStartDisp1        := FALSE;
@@ -99,7 +95,7 @@ CASE nState OF
             ELSE
                 nState := 40; // Sie war schon auf der Zielgeraden zum Roboter (Station 4)
             END_IF
-			
+            
         // --- 3. NORMALBETRIEB: Keine alte Flasche im System ---
         ELSE
             bStartVereinzelung := TRUE;
@@ -112,13 +108,13 @@ CASE nState OF
         END_IF
 
     20: // "Fördern zu Extruder i"
-		eState := E_State.Production;
+        eState := E_State.Production;
         nZielStation := i; // Dem Transport das Ziel (1, 2 oder 3) mitteilen
         bStartTransport := TRUE;
 
         IF fbTransport.eState = E_State.Done THEN
             
-           	IF i = 1 THEN
+               IF i = 1 THEN
                 bStartVereinzelung := FALSE; // Vereinzelung darf nächste Flasche holen
             END_IF
             
@@ -127,7 +123,7 @@ CASE nState OF
         END_IF
 
     30: // "Extruder i Start"
-		eState := E_State.Production;
+        eState := E_State.Production;
         // Welcher Dispenser muss gestartet werden?
         IF i = 1 THEN bStartDisp1 := TRUE; END_IF
         IF i = 2 THEN bStartDisp2 := TRUE; END_IF
@@ -161,34 +157,24 @@ CASE nState OF
 
         IF fbTransport.eState = E_State.Done THEN
             bStartTransport := FALSE;
-            nState := 41;
+            nState := 50;
         END_IF
-
-    41: // Warten auf den Greifer!
-        eState := E_State.Production;
-        
-        IF bManipulatorBandFrei THEN
-            nState := 50; 
-        END_IF
-    // -------------------------------------
 
     50: // Done
         eState := E_State.Done;
-        bFlascheAktiv := FALSE; // Die Flasche verschwindet erst jetzt!
+        bFlascheAktiv := FALSE; 
 
         IF NOT bExecute THEN
             nState := 0; 
         END_IF
-	
-	99: // Error
+    
+    99: // Error
         eState := E_State.Error; 
         IF NOT fbTransport.bError THEN
             nState := nMemState; // Nach Reset zurück zum alten zustand
         END_IF
         
 END_CASE
-
-
 
 // FBs
 

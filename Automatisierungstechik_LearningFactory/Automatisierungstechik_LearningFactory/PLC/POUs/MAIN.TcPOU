@@ -3,7 +3,7 @@
   <POU Name="MAIN" Id="{a083648c-e1b0-487c-87b8-a87728f45f05}" SpecialFunc="None">
     <Declaration><![CDATA[PROGRAM MAIN
 VAR
-	// Die Logik-Bausteine (Module Level)
+    // Die Logik-Bausteine (Module Level)
     fbAmpel        : FB_StatusLight;
     //fbVereinzelung : FB_Vereinzelung;
     //fbTransport    : FB_Transport;
@@ -13,23 +13,22 @@ VAR
     //fbDisp2        : FB_Dispenser;
     //fbDisp3        : FB_Dispenser;
 
-    // NEU: Der Werksleiter / Master (Machine Level)
     // Er steuert die oben genannten Module
     fbModul        : FB_Abfuellmodul;
-	fbManX         : FB_Man_X;
+    fbManX         : FB_Man_X;
+    
     // Die Hardware-Übersetzer für die Relais (Process Level)
-//     fbRelaisZyl1   : FB_RCrtl; // Schleuse oben
-//     fbRelaisZyl2   : FB_RCrtl; // Schleuse unten
+//  fbRelaisZyl1   : FB_RCrtl; // Schleuse oben
+//  fbRelaisZyl2   : FB_RCrtl; // Schleuse unten
     
     // Der Antrieb
     //fbBand         : FB_CNV;
-	fbiot : FB_IOT;
-	
-	//reset
-	reset : BOOL;
-	bError : Bool;
-END_VAR
-]]></Declaration>
+    fbiot : FB_IOT;
+    
+    //reset
+    reset : BOOL;
+    bError : Bool;
+END_VAR]]></Declaration>
     <Implementation>
       <ST><![CDATA[// --- 1. DER CHEF GIBT DIE BEFEHLE (Hierarchisches Modul) ---
 
@@ -40,9 +39,8 @@ fbiot(iUSS1 := IFC_HW.iFillSens1, iUSS2 := IFC_HW.iFillSens2, iUSS3 := IFC_HW.iF
 fbModul(
     bEnable := IFC_HW.bEnable,
     bExecute := IFC_HW.bExecute,
-	bManipulatorBandFrei := fbManX.bBandFrei,
-	//bTransportError := fbTransport.bError, 
-    bReset := reset,
+    //bTransportError := fbTransport.bError, 
+    bReset := reset
     
     // Status-Rückmeldungen der Arbeiter abfragen
     //bVereinzelungDone := (fbVereinzelung.eStateOut = E_State.Done),
@@ -51,7 +49,6 @@ fbModul(
     //bDisp2Done        := (fbDisp2.eState = E_State.Done),
     //bDisp3Done        := (fbDisp3.eState = E_State.Done)
 );
-
 
 fbManX(
     // Steuerbefehle
@@ -103,7 +100,7 @@ IFC_HW.bAmpelGrun  := fbAmpel.bLightGreen;
 // fbTransport(
 //     bEnable  := IFC_HW.bEnable,
 //     bExecute := fbModul.bStartTransport,    // <-- Befehl kommt vom Chef
-// 	bReset   := reset,
+//     bReset   := reset,
 //     nStation := fbModul.nZielStation,       // <-- Ziel (1, 2, 3, 4) kommt vom Chef
 //     bSens1   := IFC_HW.bBandSens1,
 //     bSens2   := IFC_HW.bBandSens2,
@@ -157,11 +154,11 @@ IFC_HW.bAmpelGrun  := fbAmpel.bLightGreen;
 //     ax       := IFC_HW.ax_BandMotor    
 // );
 
-bError := (fbModul.eState = E_State.Error); 	// Überprüfen ob Fehler
+bError := (fbModul.eState = E_State.Error);     // Überprüfen ob Fehler
 ifc_hw.breset := reset;
 IF reset AND NOT bError THEN 
-	ifc_hw.bStop := FALSE;
-	reset := FALSE;
+    ifc_hw.bStop := FALSE;
+    reset := FALSE;
 END_IF]]></ST>
     </Implementation>
   </POU>

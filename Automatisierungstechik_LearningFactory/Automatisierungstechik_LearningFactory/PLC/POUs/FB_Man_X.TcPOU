@@ -57,10 +57,12 @@ VAR
     mcMoveAbsZ      : MC_MoveAbsolute;
 END_VAR]]></Declaration>
     <Implementation>
-      <ST><![CDATA[// Timer für den Greifer aufrufen
+      <ST><![CDATA[
+
+// Timer für den Greifer aufrufen
 fbTimer();
 
-// Fehlerüberwachung
+// Fehlerüberwachung (Sammelt Errors von ALLEN genutzten Achsen und MC-Bausteinen)
 IF (ax.Status.Error OR axY.Status.Error OR axZ.Status.Error OR mcMoveAbs.Error OR mcVelocity.Error OR mcSetPos.Error) AND nState <> 100 THEN
     nState := 99;
 END_IF
@@ -72,7 +74,9 @@ IF (bStop OR NOT bEnable) AND nState >= 3 AND nState < 80 THEN
     nState := 80; 
 END_IF
 
-// State Maschine
+// ==========================================
+// STATE MACHINE
+// ==========================================
 CASE nState OF
     0: // Off
         eState := E_State.Off;
@@ -100,7 +104,9 @@ CASE nState OF
         END_IF
         IF NOT bEnable THEN nState := 0; END_IF 
         
-    // Referenzfahrt
+    // ==========================================
+    // REFERENZFAHRT (Nur X-Achse benötigt das wirklich)
+    // ==========================================
     10: // Homing Start (Fahrt nach links)
         eState := E_State.Init; 
         mcVelocity.Velocity := 15.0; 
@@ -128,7 +134,9 @@ CASE nState OF
             nState := 2; // Referenzfahrt fertig -> Ready!
         END_IF
         
-    // Betriebsmodus
+    // ==========================================
+    // NORMALBETRIEB (Warten auf Flasche)
+    // ==========================================
     2: // Ready 
         eState := E_State.Ready;
         mcVelocity.Execute := FALSE;
@@ -142,7 +150,9 @@ CASE nState OF
         END_IF
         IF NOT bEnable THEN nState := 0; END_IF
         
-    // Pick and Place
+    // ==========================================
+    // ZYKLUS: PICK & PLACE (Die Choreografie)
+    // ==========================================
     20: // 1. Z-Achse nach unten fahren (zur Flasche)
         eState := E_State.Production;
         mcMoveAbsZ.Position := 100.0; // TIEFE ANPASSEN WENN NÖTIG!
@@ -248,7 +258,9 @@ CASE nState OF
             nState := 2; // Zurück auf Lauerstellung!
         END_IF
         
+    // ==========================================
     // NOT-HALT / STOP
+    // ==========================================
     80: // Stop Achse (Harter Stopp)
         mcMoveAbs.Execute := FALSE;
         mcVelocity.Execute := FALSE;
@@ -265,7 +277,9 @@ CASE nState OF
         mcStop.Execute := FALSE; 
         nState := 1; // Sicherer Neustart inkl. Homing
     
+    // ==========================================
     // ERROR HANDLING
+    // ==========================================
     99: // Error State
         eState := E_State.Error;
         mcPower.Enable := FALSE;
@@ -293,7 +307,9 @@ CASE nState OF
         
 END_CASE
 
-// Bausteine
+// ==========================================
+// BAUSTEINE AUFRUFEN (Am Ende des Zyklus)
+// ==========================================
 
 // --- X-ACHSE ---
 mcPower(
